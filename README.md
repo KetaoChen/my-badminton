@@ -1,33 +1,25 @@
-# Choose a diverse team of 5 people to hire and communicate why they were chosen. 
+# Badminton analytics (web)
 
-## Hire goals
-- delivery speed (PM, 3 * SDE, Data)
-  - levels (intern, junior, senior)
-  - skills (BE, FE, Full stack)
-  - availability (part-time, full-time)
-  - education
-- cash flow (100M) - salary consideration
+Mono-repo using Turborepo + Next.js + Tailwind + Neon (Postgres) for personal badminton match/rally tracking. Data is stored in the cloud and can later plug into video/model analysis.
 
+## Structure
+- `apps/web`: Next.js (App Router), Tailwind UI, server actions.
+- `packages/db`: Drizzle ORM schema/client for Neon.
 
-## App Design
+## Getting started
+```bash
+npm install
+npm run dev
+```
 
-### MVP (UI)
-- Visualize all candidates - group by positions
-  - Table (only display work related information) 
-    - name, location, availability, skills, salary
-- Candidate detail modal 
-  - show candidate details (email, phone)
-- Manually choose candidate based on the data of each role. 
-- Table
+Set env (root `.env`):
+```
+NEON_DATABASE_URL=postgres://user:password@host/dbname
+NEXT_PUBLIC_APP_NAME=Badminton Analytics
+```
 
-### Iteration (Data process logic)
-- Design rules to sort the candidate
-  - how to match the data from the skills in the resume to a position (FE, BE, Data, PM)
-  - how to evaluate the level? 
-    - based on the previous experience and title & degree
-    - work time (estimated based on the end time of the lastest degreee)
-- display the sorted candidate to the hire team
-- Hire team can input their requirement (position, skills, salary)
-
-### Further iteration
-- Build some features for candidate, they can search company as well. 
+Useful scripts:
+- `npm run dev` – run all dev servers via Turborepo.
+- `npm run build` – build all.
+- `npm run lint` – lint.
+- `npx drizzle-kit generate` – generate SQL migrations from schema (uses `drizzle.config.ts`).
