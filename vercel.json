@@ -1,8 +1,15 @@
 {
-  "projects": [
+  "version": 2,
+  "builds": [
     {
-      "root": "apps/web"
+      "src": "apps/web/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "apps/web/$1"
     }
   ]
 }
-
