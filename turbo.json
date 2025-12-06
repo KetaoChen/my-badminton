@@ -8,6 +8,7 @@
     },
     "build": {
       "dependsOn": ["^build"],
+      "env": ["NEON_DATABASE_URL", "DATABASE_URL_UNPOOLED"],
       "outputs": [
         ".next/**",
         "dist/**",
