@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getMatchWithRallies } from "@/lib/actions";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export const GET = async (
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
