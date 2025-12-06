@@ -1,12 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { getMatchWithRallies } from "@/lib/actions";
 
-export async function GET(
-  _request: Request,
-  { params }: { params: { id: string } },
-) {
-  const data = await getMatchWithRallies(params.id);
+export const GET = async (
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params;
+  const data = await getMatchWithRallies(id);
 
   if (!data) {
     return NextResponse.json({ error: "Match not found" }, { status: 404 });
@@ -26,11 +27,14 @@ export async function GET(
       "StartScoreOpponent",
       "EndScoreSelf",
       "EndScoreOpponent",
-      "DurationSeconds",
+      "TacticScore",
+      "ServeScore",
+      "PlacementScore",
+      "FootworkScore",
       "Notes",
     ]
       .map((h) => `"${h}"`)
-      .join(","),
+      .join(",")
   );
 
   for (const rally of data.rallies) {
@@ -42,7 +46,10 @@ export async function GET(
       rally.startScoreOpponent ?? "",
       rally.endScoreSelf ?? "",
       rally.endScoreOpponent ?? "",
-      rally.durationSeconds ?? "",
+      rally.tacticScore ?? "",
+      rally.serveScore ?? "",
+      rally.placementScore ?? "",
+      rally.footworkScore ?? "",
       rally.notes ?? "",
     ].map((value) => `"${String(value).replace(/"/g, '""')}"`);
 
@@ -55,8 +62,7 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="match-${params.id}.csv"`,
+      "Content-Disposition": `attachment; filename="match-${id}.csv"`,
     },
   });
-}
-
+};

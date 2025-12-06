@@ -62,14 +62,15 @@ export async function listOpponents() {
     .orderBy(desc(schema.opponents.createdAt));
 }
 
-export async function createOpponent(formData: FormData) {
+export async function createOpponent(formData: FormData): Promise<void> {
   const parsed = opponentFormSchema.safeParse({
     name: formData.get("name"),
     notes: formData.get("notes"),
   });
 
   if (!parsed.success) {
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
+    console.error(parsed.error.flatten().formErrors);
+    return;
   }
 
   const { name, notes } = parsed.data;
@@ -80,7 +81,6 @@ export async function createOpponent(formData: FormData) {
   });
 
   revalidatePath("/");
-  return { ok: true };
 }
 
 export async function listMatches() {
@@ -239,7 +239,7 @@ export async function getDashboardSummary() {
   };
 }
 
-export async function createMatch(formData: FormData) {
+export async function createMatch(formData: FormData): Promise<void> {
   const parsed = matchFormSchema.safeParse({
     title: formData.get("title"),
     matchDate: formData.get("matchDate"),
@@ -250,7 +250,7 @@ export async function createMatch(formData: FormData) {
 
   if (!parsed.success) {
     console.error(parsed.error.flatten().formErrors);
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
+    return;
   }
 
   const { title, matchDate, opponent, opponentId, notes } = parsed.data;
@@ -264,10 +264,12 @@ export async function createMatch(formData: FormData) {
   });
 
   revalidatePath("/");
-  return { ok: true };
 }
 
-export async function updateMatch(matchId: string, formData: FormData) {
+export async function updateMatch(
+  matchId: string,
+  formData: FormData
+): Promise<void> {
   const parsed = matchFormSchema.safeParse({
     title: formData.get("title"),
     matchDate: formData.get("matchDate"),
@@ -278,7 +280,7 @@ export async function updateMatch(matchId: string, formData: FormData) {
 
   if (!parsed.success) {
     console.error(parsed.error.flatten().formErrors);
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
+    return;
   }
 
   const { title, matchDate, opponent, opponentId, notes } = parsed.data;
@@ -296,10 +298,9 @@ export async function updateMatch(matchId: string, formData: FormData) {
 
   revalidatePath(`/matches/${matchId}`);
   revalidatePath("/");
-  return { ok: true };
 }
 
-export async function createRally(formData: FormData) {
+export async function createRally(formData: FormData): Promise<void> {
   const parsed = rallyFormSchema.safeParse({
     matchId: formData.get("matchId"),
     result: formData.get("result"),
@@ -313,7 +314,7 @@ export async function createRally(formData: FormData) {
 
   if (!parsed.success) {
     console.error(parsed.error.flatten().formErrors);
-    return { ok: false, errors: parsed.error.flatten().fieldErrors };
+    return;
   }
 
   const data = parsed.data;
@@ -370,5 +371,4 @@ export async function createRally(formData: FormData) {
   });
 
   revalidatePath(`/matches/${data.matchId}`);
-  return { ok: true };
 }
