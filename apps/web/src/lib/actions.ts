@@ -99,7 +99,9 @@ export async function createRally(formData: FormData) {
   const data = parsed.data;
 
   const sequenceInput = data.sequence ? Number(data.sequence) : undefined;
-  const startScoreSelf = data.startScoreSelf ? Number(data.startScoreSelf) : null;
+  const startScoreSelf = data.startScoreSelf
+    ? Number(data.startScoreSelf)
+    : null;
   const startScoreOpponent = data.startScoreOpponent
     ? Number(data.startScoreOpponent)
     : null;
@@ -141,4 +143,3 @@ export async function createRally(formData: FormData) {
   revalidatePath(`/matches/${data.matchId}`);
   return { ok: true };
 }
-
