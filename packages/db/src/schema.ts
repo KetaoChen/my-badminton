@@ -17,6 +17,7 @@ export const pointFor = pgEnum("point_for", ["self", "opponent"]);
 export const opponents = pgTable("opponents", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
+  training: boolean("training").notNull().default(false),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

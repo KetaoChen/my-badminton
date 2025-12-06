@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import {
-  createOpponent,
   createMatch,
   getDashboardSummary,
   listMatches,
@@ -150,11 +149,21 @@ export default async function Home() {
                       </option>
                     ))}
                   </select>
-                  <input
-                    name="opponent"
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                    placeholder="或手动输入对手名称/备注"
-                  />
+                  <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <input
+                      name="opponent"
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+                      placeholder="或手动输入对手名称/备注"
+                    />
+                    <label className="flex items-center gap-2 text-xs text-slate-600">
+                      <input
+                        type="checkbox"
+                        name="trainingOpponent"
+                        className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                      />
+                      标记为训练对手（出现在下拉列表）
+                    </label>
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
@@ -227,59 +236,6 @@ export default async function Home() {
               </ul>
             )}
           </div>
-        </section>
-
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                新建对手
-              </p>
-              <h2 className="text-lg font-semibold text-slate-900">
-                维护对手列表
-              </h2>
-            </div>
-          </div>
-          <form
-            action={createOpponent}
-            className="grid gap-4 sm:grid-cols-[1fr_1fr_auto]"
-          >
-            <input
-              name="name"
-              required
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-              placeholder="对手名称"
-            />
-            <input
-              name="notes"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-              placeholder="备注（打法、手感等，可选）"
-            />
-            <button
-              type="submit"
-              className="inline-flex w-full items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-            >
-              保存对手
-            </button>
-          </form>
-
-          {opponents.length > 0 ? (
-            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-              {opponents.slice(0, 6).map((opponent) => (
-                <li
-                  key={opponent.id}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
-                >
-                  <p className="font-semibold text-slate-900">
-                    {opponent.name}
-                  </p>
-                  {opponent.notes ? (
-                    <p className="text-xs text-slate-600">{opponent.notes}</p>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : null}
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

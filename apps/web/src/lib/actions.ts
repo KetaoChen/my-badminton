@@ -1,7 +1,7 @@
 "use server";
 
 import { db, schema } from "@my-badminton/db/client";
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -13,11 +13,20 @@ const optionalUuid = z
   .transform((v) => (v ? v : undefined))
   .optional();
 
+const checkboxBoolean = z
+  .preprocess(
+    (value) =>
+      value === "on" || value === "true" || value === true ? true : false,
+    z.boolean()
+  )
+  .optional();
+
 const matchFormSchema = z.object({
   title: z.string().trim().min(1, "Match title is required"),
   matchDate: z.string().trim().optional(),
   opponentId: optionalUuid,
   opponent: z.string().trim().optional(),
+  trainingOpponent: checkboxBoolean,
   notes: z.string().trim().optional(),
 });
 
@@ -59,6 +68,12 @@ export async function listOpponents() {
   return db
     .select()
     .from(schema.opponents)
+    .where(
+      or(
+        eq(schema.opponents.training, true),
+        eq(schema.opponents.notes, "训练对手")
+      )
+    )
     .orderBy(desc(schema.opponents.createdAt));
 }
 
@@ -245,6 +260,7 @@ export async function createMatch(formData: FormData): Promise<void> {
     matchDate: formData.get("matchDate"),
     opponentId: formData.get("opponentId"),
     opponent: formData.get("opponent"),
+    trainingOpponent: formData.get("trainingOpponent"),
     notes: formData.get("notes"),
   });
 
@@ -253,11 +269,26 @@ export async function createMatch(formData: FormData): Promise<void> {
     return;
   }
 
-  const { title, matchDate, opponent, opponentId, notes } = parsed.data;
+  const { title, matchDate, opponent, opponentId, trainingOpponent, notes } =
+    parsed.data;
+
+  let finalOpponentId = opponentId || null;
+
+  if (!opponentId && opponent) {
+    const [inserted] = await db
+      .insert(schema.opponents)
+      .values({
+        name: opponent,
+        notes: trainingOpponent ? "训练对手" : null,
+        training: !!trainingOpponent,
+      })
+      .returning({ id: schema.opponents.id });
+    finalOpponentId = inserted?.id ?? null;
+  }
 
   await db.insert(schema.matches).values({
     title,
-    opponentId: opponentId || null,
+    opponentId: finalOpponentId,
     opponent: opponent || null,
     notes: notes || null,
     matchDate: matchDate || null,
