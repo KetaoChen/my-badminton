@@ -27,6 +27,7 @@ const matchFormSchema = z.object({
   opponentId: optionalUuid,
   opponent: z.string().trim().optional(),
   trainingOpponent: checkboxBoolean,
+  tournament: checkboxBoolean,
   notes: z.string().trim().optional(),
 });
 
@@ -261,6 +262,7 @@ export async function createMatch(formData: FormData): Promise<void> {
     opponentId: formData.get("opponentId"),
     opponent: formData.get("opponent"),
     trainingOpponent: formData.get("trainingOpponent"),
+    tournament: formData.get("tournament"),
     notes: formData.get("notes"),
   });
 
@@ -269,8 +271,15 @@ export async function createMatch(formData: FormData): Promise<void> {
     return;
   }
 
-  const { title, matchDate, opponent, opponentId, trainingOpponent, notes } =
-    parsed.data;
+  const {
+    title,
+    matchDate,
+    opponent,
+    opponentId,
+    trainingOpponent,
+    tournament,
+    notes,
+  } = parsed.data;
 
   let finalOpponentId = opponentId || null;
 
@@ -290,6 +299,7 @@ export async function createMatch(formData: FormData): Promise<void> {
     title,
     opponentId: finalOpponentId,
     opponent: opponent || null,
+    tournament: !!tournament,
     notes: notes || null,
     matchDate: matchDate || null,
   });
@@ -306,6 +316,7 @@ export async function updateMatch(
     matchDate: formData.get("matchDate"),
     opponentId: formData.get("opponentId"),
     opponent: formData.get("opponent"),
+    tournament: formData.get("tournament"),
     notes: formData.get("notes"),
   });
 
@@ -314,7 +325,8 @@ export async function updateMatch(
     return;
   }
 
-  const { title, matchDate, opponent, opponentId, notes } = parsed.data;
+  const { title, matchDate, opponent, opponentId, tournament, notes } =
+    parsed.data;
 
   await db
     .update(schema.matches)
@@ -322,6 +334,7 @@ export async function updateMatch(
       title,
       opponentId: opponentId || null,
       opponent: opponent || null,
+      tournament: !!tournament,
       notes: notes || null,
       matchDate: matchDate || null,
     })

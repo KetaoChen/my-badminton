@@ -97,6 +97,15 @@ export default async function MatchDetailPage({ params }: PageProps) {
               </select>
             </div>
             <div className="flex items-end justify-end gap-2">
+              <label className="flex items-center gap-2 text-xs text-slate-600">
+                <input
+                  type="checkbox"
+                  name="tournament"
+                  defaultChecked={Boolean(data.match.tournament)}
+                  className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                />
+                正式赛 (tournament)
+              </label>
               <button
                 type="submit"
                 className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
