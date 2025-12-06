@@ -10,6 +10,16 @@ export const GET = async (
   { params }: { params: Promise<{ id: string }> }
 ) => {
   const { id } = await params;
+
+  // Diagnostics to confirm env is available at runtime without logging the secret.
+  const envValue = process.env.NEON_DATABASE_URL;
+  console.log(
+    "[export] NEON_DATABASE_URL set:",
+    Boolean(envValue),
+    "len",
+    envValue?.length ?? 0
+  );
+
   const data = await getMatchWithRallies(id);
 
   if (!data) {
