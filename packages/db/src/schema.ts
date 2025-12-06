@@ -3,11 +3,23 @@ import { date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } f
 export const rallyResult = pgEnum("rally_result", ["win", "lose"]);
 export const pointFor = pgEnum("point_for", ["self", "opponent"]);
 
+export const opponents = pgTable("opponents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const matches = pgTable("matches", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
   matchDate: date("match_date"),
   opponent: text("opponent"),
+  opponentId: uuid("opponent_id").references(() => opponents.id, {
+    onDelete: "set null",
+  }),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

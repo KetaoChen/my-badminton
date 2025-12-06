@@ -4,7 +4,7 @@ import { createRally, getMatchWithRallies } from "@/lib/actions";
 import { summarizeMatch } from "@/lib/stats";
 
 type PageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 function formatDate(value?: string | Date | null) {
@@ -16,7 +16,7 @@ function formatDate(value?: string | Date | null) {
 }
 
 export default async function MatchDetailPage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
   const data = await getMatchWithRallies(id);
 
   if (!data) {
@@ -54,15 +54,23 @@ export default async function MatchDetailPage({ params }: PageProps) {
             </h1>
             <p className="text-sm text-slate-500">
               {formatDate(data.match.matchDate)} · 对手：{" "}
-              {data.match.opponent || "未填写"}
+              {data.match.opponentName || "未填写"}
             </p>
           </div>
-          <Link
-            href="/"
-            className="text-sm font-medium text-slate-700 underline-offset-4 hover:underline"
-          >
-            返回列表
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/matches/${data.match.id}/export`}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            >
+              导出 CSV
+            </Link>
+            <Link
+              href="/"
+              className="text-sm font-medium text-slate-700 underline-offset-4 hover:underline"
+            >
+              返回列表
+            </Link>
+          </div>
         </div>
       </header>
 
