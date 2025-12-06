@@ -1,4 +1,15 @@
-import { date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  date,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 export const rallyResult = pgEnum("rally_result", ["win", "lose"]);
 export const pointFor = pgEnum("point_for", ["self", "opponent"]);
@@ -43,13 +54,16 @@ export const rallies = pgTable(
     endScoreOpponent: integer("end_score_opponent"),
     durationSeconds: integer("duration_seconds"),
     shotPattern: jsonb("shot_pattern").$type<Record<string, unknown> | null>(),
+    serveScore: integer("serve_score"),
+    placementScore: integer("placement_score"),
+    footworkScore: integer("footwork_score"),
     notes: text("notes"),
+    tacticScore: integer("tactic_score"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
   (table) => ({
     matchIdx: index("rallies_match_id_idx").on(table.matchId),
-  }),
+  })
 );
-

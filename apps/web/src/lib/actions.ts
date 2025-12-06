@@ -28,14 +28,30 @@ const opponentFormSchema = z.object({
 
 const rallyFormSchema = z.object({
   matchId: z.string().uuid(),
-  sequence: z.string().trim().optional(),
   result: z.enum(["win", "lose"]),
-  pointReason: z.string().trim().optional(),
-  startScoreSelf: z.string().trim().optional(),
-  startScoreOpponent: z.string().trim().optional(),
-  endScoreSelf: z.string().trim().optional(),
-  endScoreOpponent: z.string().trim().optional(),
-  durationSeconds: z.string().trim().optional(),
+  pointReason: z.enum([
+    "对手失误",
+    "我方制胜球",
+    "我方失误",
+    "对手制胜球",
+    "其他",
+  ]),
+  serveScore: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? Number(v) : null)),
+  placementScore: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? Number(v) : null)),
+  footworkScore: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? Number(v) : null)),
+  tacticScore: z.string().trim().optional(),
   notes: z.string().trim().optional(),
 });
 
@@ -244,11 +260,41 @@ export async function createMatch(formData: FormData) {
     opponentId: opponentId || null,
     opponent: opponent || null,
     notes: notes || null,
-    matchDate: matchDate
-      ? new Date(matchDate).toISOString()
-      : new Date().toISOString(),
+    matchDate: matchDate || null,
   });
 
+  revalidatePath("/");
+  return { ok: true };
+}
+
+export async function updateMatch(matchId: string, formData: FormData) {
+  const parsed = matchFormSchema.safeParse({
+    title: formData.get("title"),
+    matchDate: formData.get("matchDate"),
+    opponentId: formData.get("opponentId"),
+    opponent: formData.get("opponent"),
+    notes: formData.get("notes"),
+  });
+
+  if (!parsed.success) {
+    console.error(parsed.error.flatten().formErrors);
+    return { ok: false, errors: parsed.error.flatten().fieldErrors };
+  }
+
+  const { title, matchDate, opponent, opponentId, notes } = parsed.data;
+
+  await db
+    .update(schema.matches)
+    .set({
+      title,
+      opponentId: opponentId || null,
+      opponent: opponent || null,
+      notes: notes || null,
+      matchDate: matchDate || null,
+    })
+    .where(eq(schema.matches.id, matchId));
+
+  revalidatePath(`/matches/${matchId}`);
   revalidatePath("/");
   return { ok: true };
 }
@@ -256,14 +302,12 @@ export async function createMatch(formData: FormData) {
 export async function createRally(formData: FormData) {
   const parsed = rallyFormSchema.safeParse({
     matchId: formData.get("matchId"),
-    sequence: formData.get("sequence"),
     result: formData.get("result"),
     pointReason: formData.get("pointReason"),
-    startScoreSelf: formData.get("startScoreSelf"),
-    startScoreOpponent: formData.get("startScoreOpponent"),
-    endScoreSelf: formData.get("endScoreSelf"),
-    endScoreOpponent: formData.get("endScoreOpponent"),
-    durationSeconds: formData.get("durationSeconds"),
+    serveScore: formData.get("serveScore"),
+    placementScore: formData.get("placementScore"),
+    footworkScore: formData.get("footworkScore"),
+    tacticScore: formData.get("tacticScore"),
     notes: formData.get("notes"),
   });
 
@@ -274,22 +318,7 @@ export async function createRally(formData: FormData) {
 
   const data = parsed.data;
 
-  const sequenceInput = data.sequence ? Number(data.sequence) : undefined;
-  const startScoreSelf = data.startScoreSelf
-    ? Number(data.startScoreSelf)
-    : null;
-  const startScoreOpponent = data.startScoreOpponent
-    ? Number(data.startScoreOpponent)
-    : null;
-  const endScoreSelf = data.endScoreSelf ? Number(data.endScoreSelf) : null;
-  const endScoreOpponent = data.endScoreOpponent
-    ? Number(data.endScoreOpponent)
-    : null;
-  const durationSeconds = data.durationSeconds
-    ? Number(data.durationSeconds)
-    : null;
-
-  let sequence = Number.isFinite(sequenceInput) ? sequenceInput : undefined;
+  let sequence: number | undefined = undefined;
 
   if (sequence === undefined) {
     const [current] = await db
@@ -302,6 +331,27 @@ export async function createRally(formData: FormData) {
     sequence = (current?.maxSequence ?? 0) + 1;
   }
 
+  const [last] = await db
+    .select()
+    .from(schema.rallies)
+    .where(eq(schema.rallies.matchId, data.matchId))
+    .orderBy(desc(schema.rallies.sequence))
+    .limit(1);
+
+  const prevSelf =
+    last?.endScoreSelf ?? last?.startScoreSelf ?? last?.endScoreSelf ?? 0;
+  const prevOpp =
+    last?.endScoreOpponent ??
+    last?.startScoreOpponent ??
+    last?.endScoreOpponent ??
+    0;
+
+  const startScoreSelf = prevSelf;
+  const startScoreOpponent = prevOpp;
+  const endScoreSelf = data.result === "win" ? prevSelf + 1 : prevSelf;
+  const endScoreOpponent = data.result === "lose" ? prevOpp + 1 : prevOpp;
+  const tacticScore = data.tacticScore ? Number(data.tacticScore) : null;
+
   await db.insert(schema.rallies).values({
     matchId: data.matchId,
     sequence,
@@ -312,7 +362,10 @@ export async function createRally(formData: FormData) {
     startScoreOpponent,
     endScoreSelf,
     endScoreOpponent,
-    durationSeconds,
+    serveScore: data.serveScore ?? null,
+    placementScore: data.placementScore ?? null,
+    footworkScore: data.footworkScore ?? null,
+    tacticScore,
     notes: data.notes || null,
   });
 

@@ -1,23 +1,29 @@
 import Link from "next/link";
 
-import { createRally, getMatchWithRallies } from "@/lib/actions";
+import {
+  createRally,
+  getMatchWithRallies,
+  listOpponents,
+  updateMatch,
+} from "@/lib/actions";
 import { summarizeMatch } from "@/lib/stats";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-function formatDate(value?: string | Date | null) {
-  if (!value) return "未设置日期";
-  const dateValue = typeof value === "string" ? value : value.toISOString();
-  return new Intl.DateTimeFormat("zh-CN", {
-    dateStyle: "medium",
-  }).format(new Date(dateValue));
+function formatInputDate(value?: string | Date | null) {
+  if (!value) return "";
+  const d = typeof value === "string" ? new Date(value) : value;
+  return d.toISOString().slice(0, 10);
 }
 
 export default async function MatchDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const data = await getMatchWithRallies(id);
+  const [data, opponents] = await Promise.all([
+    getMatchWithRallies(id),
+    listOpponents(),
+  ]);
 
   if (!data) {
     return (
@@ -29,7 +35,9 @@ export default async function MatchDetailPage({ params }: PageProps) {
           >
             返回比赛列表
           </Link>
-          <p className="mt-6 text-lg font-semibold text-slate-900">未找到比赛</p>
+          <p className="mt-6 text-lg font-semibold text-slate-900">
+            未找到比赛
+          </p>
           <p className="text-sm text-slate-500">请确认链接是否正确。</p>
         </div>
       </div>
@@ -38,25 +46,75 @@ export default async function MatchDetailPage({ params }: PageProps) {
 
   const summary = summarizeMatch(data.rallies);
   const reasons = Object.entries(summary.reasons).sort(
-    (a, b) => b[1].wins + b[1].losses - (a[1].wins + a[1].losses),
+    (a, b) => b[1].wins + b[1].losses - (a[1].wins + a[1].losses)
   );
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Match Detail
-            </p>
-            <h1 className="text-2xl font-semibold text-slate-900">
-              {data.match.title}
-            </h1>
-            <p className="text-sm text-slate-500">
-              {formatDate(data.match.matchDate)} · 对手：{" "}
-              {data.match.opponentName || "未填写"}
-            </p>
-          </div>
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-6 py-5 md:flex-row md:items-end md:justify-between">
+          <form
+            action={updateMatch.bind(null, data.match.id)}
+            className="grid w-full gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto]"
+          >
+            <div className="flex flex-col">
+              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                比赛名称
+              </label>
+              <input
+                name="title"
+                defaultValue={data.match.title}
+                required
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                日期
+              </label>
+              <input
+                type="date"
+                name="matchDate"
+                defaultValue={formatInputDate(data.match.matchDate)}
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                对手
+              </label>
+              <select
+                name="opponentId"
+                defaultValue={data.match.opponentId ?? ""}
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+              >
+                <option value="">选择已有对手</option>
+                {opponents.map((opponent) => (
+                  <option key={opponent.id} value={opponent.id}>
+                    {opponent.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end justify-end gap-2">
+              <button
+                type="submit"
+                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+              >
+                保存
+              </button>
+            </div>
+            <input
+              type="hidden"
+              name="opponent"
+              defaultValue={data.match.opponent ?? ""}
+            />
+            <input
+              type="hidden"
+              name="notes"
+              defaultValue={data.match.notes ?? ""}
+            />
+          </form>
           <div className="flex items-center gap-3">
             <Link
               href={`/matches/${data.match.id}/export`}
@@ -86,7 +144,9 @@ export default async function MatchDetailPage({ params }: PageProps) {
                   {data.match.title}
                 </p>
                 {data.match.notes ? (
-                  <p className="mt-2 text-sm text-slate-600">{data.match.notes}</p>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {data.match.notes}
+                  </p>
                 ) : null}
               </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-3">
@@ -168,106 +228,101 @@ export default async function MatchDetailPage({ params }: PageProps) {
             <h2 className="text-lg font-semibold text-slate-900">录入得失分</h2>
             <form action={createRally} className="mt-4 space-y-4">
               <input type="hidden" name="matchId" value={data.match.id} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    回合编号
-                  </label>
-                  <input
-                    name="sequence"
-                    type="number"
-                    min={1}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                    placeholder="默认自动递增"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    结果 *
-                  </label>
-                  <select
-                    name="result"
-                    required
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                    defaultValue="win"
-                  >
-                    <option value="win">得分</option>
-                    <option value="lose">失分</option>
-                  </select>
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  结果 *
+                </label>
+                <select
+                  name="result"
+                  required
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+                  defaultValue="win"
+                >
+                  <option value="win">得分</option>
+                  <option value="lose">失分</option>
+                </select>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
                   得失分原因
                 </label>
-                <input
+                <select
                   name="pointReason"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                  placeholder="如：主动进攻得分、对手失误、发球得分等"
-                />
+                  required
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+                  defaultValue="对手失误"
+                >
+                  <option value="对手失误">对手失误</option>
+                  <option value="我方制胜球">我方制胜球</option>
+                  <option value="我方失误">我方失误</option>
+                  <option value="对手制胜球">对手制胜球</option>
+                  <option value="其他">其他</option>
+                </select>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">
-                    起始比分（我 / 对手）
+                    战术执行得分
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      name="startScoreSelf"
-                      type="number"
-                      min={0}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                      placeholder="我"
-                    />
-                    <input
-                      name="startScoreOpponent"
-                      type="number"
-                      min={0}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                      placeholder="对手"
-                    />
-                  </div>
+                  <input
+                    name="tacticScore"
+                    type="number"
+                    min={0}
+                    max={10}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+                    placeholder="0-10，可选"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">
-                    结束比分（我 / 对手）
+                    发球到位得分
                   </label>
-                  <div className="flex gap-2">
-                    <input
-                      name="endScoreSelf"
-                      type="number"
-                      min={0}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                      placeholder="我"
-                    />
-                    <input
-                      name="endScoreOpponent"
-                      type="number"
-                      min={0}
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                      placeholder="对手"
-                    />
-                  </div>
+                  <input
+                    name="serveScore"
+                    type="number"
+                    min={0}
+                    max={10}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+                    placeholder="0-10，可选"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    球到位打分
+                  </label>
+                  <input
+                    name="placementScore"
+                    type="number"
+                    min={0}
+                    max={10}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+                    placeholder="0-10，可选"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    站位/步伐打分
+                  </label>
+                  <input
+                    name="footworkScore"
+                    type="number"
+                    min={0}
+                    max={10}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+                    placeholder="0-10，可选"
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  回合时长（秒）
+                  备注
                 </label>
-                <input
-                  name="durationSeconds"
-                  type="number"
-                  min={0}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                  placeholder="可选"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">备注</label>
                 <textarea
                   name="notes"
                   rows={2}
@@ -308,8 +363,11 @@ export default async function MatchDetailPage({ params }: PageProps) {
                     <th className="px-3 py-2">编号</th>
                     <th className="px-3 py-2">结果</th>
                     <th className="px-3 py-2">得失分原因</th>
+                    <th className="px-3 py-2">战术得分</th>
+                    <th className="px-3 py-2">发球到位</th>
+                    <th className="px-3 py-2">球到位</th>
+                    <th className="px-3 py-2">站位/步伐</th>
                     <th className="px-3 py-2">比分</th>
-                    <th className="px-3 py-2">时长(s)</th>
                     <th className="px-3 py-2">备注</th>
                   </tr>
                 </thead>
@@ -336,6 +394,22 @@ export default async function MatchDetailPage({ params }: PageProps) {
                       <td className="px-3 py-2 text-slate-800">
                         {rally.pointReason || "未填写"}
                       </td>
+                      <td className="px-3 py-2 text-slate-800">
+                        {rally.tacticScore != null ? rally.tacticScore : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-slate-800">
+                        {rally.serveScore != null ? rally.serveScore : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-slate-800">
+                        {rally.placementScore != null
+                          ? rally.placementScore
+                          : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-slate-800">
+                        {rally.footworkScore != null
+                          ? rally.footworkScore
+                          : "—"}
+                      </td>
                       <td className="px-3 py-2 text-slate-700">
                         {rally.startScoreSelf != null &&
                         rally.startScoreOpponent != null &&
@@ -343,9 +417,6 @@ export default async function MatchDetailPage({ params }: PageProps) {
                         rally.endScoreOpponent != null
                           ? `${rally.startScoreSelf}:${rally.startScoreOpponent} → ${rally.endScoreSelf}:${rally.endScoreOpponent}`
                           : "未记录"}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">
-                        {rally.durationSeconds ?? "-"}
                       </td>
                       <td className="px-3 py-2 text-slate-600">
                         {rally.notes || "—"}
@@ -361,4 +432,3 @@ export default async function MatchDetailPage({ params }: PageProps) {
     </div>
   );
 }
-

@@ -1,0 +1,1 @@
+ALTER TABLE "rallies" ADD COLUMN "tactic_score" integer;

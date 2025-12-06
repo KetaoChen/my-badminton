@@ -1,0 +1,1 @@
+ALTER TABLE "rallies" DROP COLUMN "serve_note";
