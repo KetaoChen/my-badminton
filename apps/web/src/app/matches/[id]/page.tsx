@@ -9,7 +9,7 @@ import {
 import { summarizeMatch } from "@/lib/stats";
 
 type PageProps = {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 };
 
 function formatInputDate(value?: string | Date | null) {
@@ -19,7 +19,7 @@ function formatInputDate(value?: string | Date | null) {
 }
 
 export default async function MatchDetailPage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
   const [data, opponents] = await Promise.all([
     getMatchWithRallies(id),
     listOpponents(),
