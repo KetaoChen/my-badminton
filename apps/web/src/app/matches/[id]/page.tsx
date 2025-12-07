@@ -398,7 +398,7 @@ export default async function MatchDetailPage({ params }: PageProps) {
                           ? `${rally.startScoreSelf}:${rally.startScoreOpponent} → ${rally.endScoreSelf}:${rally.endScoreOpponent}`
                           : "未记录"}
                       </td>
-                      <td className="px-3 py-2 text-slate-600">
+                      <td className="max-w-[300px] px-3 py-2 text-slate-600 break-words">
                         {rally.notes || "—"}
                       </td>
                       <td className="px-3 py-2 text-right align-top">
