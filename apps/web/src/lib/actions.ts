@@ -37,16 +37,25 @@ const opponentFormSchema = z.object({
   notes: z.string().trim().optional(),
 });
 
+const rallyPointReasons = [
+  "对手失误",
+  "拉吊",
+  "突击",
+  "杀球",
+  "网前",
+  "防反",
+  "假动作",
+  "球不到位",
+  "步伐不到位",
+  "我方失误",
+  "对手制胜球",
+  "其他",
+] as const;
+
 const rallyFormSchema = z.object({
   matchId: z.string().uuid(),
   result: z.enum(["win", "lose"]),
-  pointReason: z.enum([
-    "对手失误",
-    "我方制胜球",
-    "我方失误",
-    "对手制胜球",
-    "其他",
-  ]),
+  pointReason: z.enum(rallyPointReasons),
   serveScore: z
     .string()
     .trim()

@@ -9,8 +9,23 @@ type Props = {
   reasonName?: string;
 };
 
-const winReasons = ["对手失误", "我方制胜球", "其他"] as const;
-const loseReasons = ["我方失误", "对手制胜球", "其他"] as const;
+const winReasons = [
+  "对手失误",
+  "拉吊",
+  "突击",
+  "杀球",
+  "网前",
+  "防反",
+  "假动作",
+  "其他",
+] as const;
+const loseReasons = [
+  "我方失误",
+  "球不到位",
+  "步伐不到位",
+  "对手制胜球",
+  "其他",
+] as const;
 
 export function ResultReasonFields({
   defaultResult = "win",
@@ -79,4 +94,3 @@ export function ResultReasonFields({
     </div>
   );
 }
-
