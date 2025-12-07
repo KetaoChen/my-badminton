@@ -7,6 +7,9 @@ import {
   listTournaments,
   updateMatch,
 } from "@/lib/actions";
+import { MatchEditModal } from "@/components/MatchEditModal";
+import { ResultReasonFields } from "@/components/ResultReasonFields";
+import { RallyEditModal } from "@/components/RallyEditModal";
 import { summarizeMatch } from "@/lib/stats";
 
 type PageProps = {
@@ -51,91 +54,38 @@ export default async function MatchDetailPage({ params }: PageProps) {
     (a, b) => b[1].wins + b[1].losses - (a[1].wins + a[1].losses)
   );
 
+  const displayTitle = [
+    data.match.tournamentName,
+    data.match.title,
+    data.match.opponentName ?? undefined,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-6 py-5 md:flex-row md:items-end md:justify-between">
-          <form
-            action={updateMatch.bind(null, data.match.id)}
-            className="grid w-full gap-3 md:grid-cols-[1.2fr_1fr_1fr_auto]"
-          >
-            <div className="flex flex-col">
-              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                比赛名称
-              </label>
-              <input
-                name="title"
-                defaultValue={data.match.title}
-                required
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                日期
-              </label>
-              <input
-                type="date"
-                name="matchDate"
-                defaultValue={formatInputDate(data.match.matchDate)}
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                对手
-              </label>
-              <select
-                name="opponentId"
-                defaultValue={data.match.opponentId ?? ""}
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-              >
-                <option value="">选择已有对手</option>
-                {opponents.map((opponent) => (
-                  <option key={opponent.id} value={opponent.id}>
-                    {opponent.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end justify-end gap-2">
-              <select
-                name="tournamentId"
-                defaultValue={data.match.tournamentId ?? ""}
-                className="w-40 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs shadow-inner focus:border-slate-400 focus:outline-none"
-              >
-                <option value="">选择已有赛事</option>
-                {tournaments.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                name="tournamentName"
-                defaultValue=""
-                className="w-40 rounded-lg border border-slate-200 px-2 py-1 text-xs shadow-inner focus:border-slate-400 focus:outline-none"
-                placeholder="赛事名称（填或选即为正式赛）"
-              />
-              <button
-                type="submit"
-                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-              >
-                保存
-              </button>
-            </div>
-            <input
-              type="hidden"
-              name="opponent"
-              defaultValue={data.match.opponent ?? ""}
-            />
-            <input
-              type="hidden"
-              name="notes"
-              defaultValue={data.match.notes ?? ""}
-            />
-          </form>
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-6 py-5 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              比赛名称
+            </p>
+            <p className="text-lg font-semibold text-slate-900">
+              {displayTitle || data.match.title}
+            </p>
+            <p className="text-sm text-slate-600">
+              日期：{formatInputDate(data.match.matchDate) || "未填写"} · 对手：
+              {data.match.opponentName || "未填写"} · 赛事：
+              {data.match.tournamentName || "未填写"}
+            </p>
+          </div>
           <div className="flex items-center gap-3">
+            <MatchEditModal
+              match={data.match}
+              opponents={opponents}
+              tournaments={tournaments}
+              action={updateMatch.bind(null, data.match.id)}
+            />
             <Link
               href={`/matches/${data.match.id}/export`}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
@@ -248,38 +198,10 @@ export default async function MatchDetailPage({ params }: PageProps) {
             <h2 className="text-lg font-semibold text-slate-900">录入得失分</h2>
             <form action={createRally} className="mt-4 space-y-4">
               <input type="hidden" name="matchId" value={data.match.id} />
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  结果 *
-                </label>
-                <select
-                  name="result"
-                  required
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                  defaultValue="win"
-                >
-                  <option value="win">得分</option>
-                  <option value="lose">失分</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  得失分原因
-                </label>
-                <select
-                  name="pointReason"
-                  required
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-                  defaultValue="对手失误"
-                >
-                  <option value="对手失误">对手失误</option>
-                  <option value="我方制胜球">我方制胜球</option>
-                  <option value="我方失误">我方失误</option>
-                  <option value="对手制胜球">对手制胜球</option>
-                  <option value="其他">其他</option>
-                </select>
-              </div>
+              <ResultReasonFields
+                defaultResult="win"
+                defaultReason="对手失误"
+              />
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -389,6 +311,7 @@ export default async function MatchDetailPage({ params }: PageProps) {
                     <th className="px-3 py-2">站位/步伐</th>
                     <th className="px-3 py-2">比分</th>
                     <th className="px-3 py-2">备注</th>
+                    <th className="px-3 py-2 text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -440,6 +363,21 @@ export default async function MatchDetailPage({ params }: PageProps) {
                       </td>
                       <td className="px-3 py-2 text-slate-600">
                         {rally.notes || "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right align-top">
+                        <RallyEditModal
+                          rally={{
+                            id: rally.id,
+                            matchId: data.match.id,
+                            result: rally.result,
+                            pointReason: rally.pointReason,
+                            tacticScore: rally.tacticScore,
+                            serveScore: rally.serveScore,
+                            placementScore: rally.placementScore,
+                            footworkScore: rally.footworkScore,
+                            notes: rally.notes,
+                          }}
+                        />
                       </td>
                     </tr>
                   ))}

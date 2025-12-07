@@ -193,15 +193,17 @@ export default async function Home() {
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
                         <p className="text-sm font-semibold text-slate-900">
-                          {match.title}
+                          {[
+                            match.tournamentName,
+                            match.title,
+                            match.opponentName,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || match.title}
                         </p>
                         <p className="text-xs text-slate-500">
-                          {formatDate(match.matchDate)} · 对手：{" "}
-                          {match.opponentName || "未填写"}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          得分情况：{match.wins ?? 0} - {match.losses ?? 0}
-                          （回合）
+                          {formatDate(match.matchDate)} · 得分情况：
+                          {match.wins ?? 0} - {match.losses ?? 0}（回合）
                         </p>
                         <span
                           className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${

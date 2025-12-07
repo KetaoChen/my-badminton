@@ -1,7 +1,7 @@
 "use server";
 
 import { db, schema } from "@my-badminton/db/client";
-import { desc, eq, sql, or } from "drizzle-orm";
+import { asc, desc, eq, sql, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -66,6 +66,10 @@ const rallyFormSchema = z.object({
   notes: z.string().trim().optional(),
 });
 
+const rallyUpdateFormSchema = rallyFormSchema.extend({
+  rallyId: z.string().uuid(),
+});
+
 export async function listOpponents() {
   return db
     .select()
@@ -112,11 +116,16 @@ export async function listMatches() {
     .select({
       match: schema.matches,
       opponent: schema.opponents,
+      tournament: schema.tournaments,
     })
     .from(schema.matches)
     .leftJoin(
       schema.opponents,
       eq(schema.opponents.id, schema.matches.opponentId)
+    )
+    .leftJoin(
+      schema.tournaments,
+      eq(schema.tournaments.id, schema.matches.tournamentId)
     )
     .orderBy(desc(schema.matches.createdAt));
 
@@ -147,6 +156,7 @@ export async function listMatches() {
     return {
       ...row.match,
       opponentName: row.opponent?.name ?? row.match.opponent ?? null,
+      tournamentName: row.tournament?.name ?? null,
       wins: agg.wins,
       losses: agg.losses,
       total: agg.total,
@@ -161,11 +171,16 @@ export async function getMatchWithRallies(matchId: string) {
     .select({
       match: schema.matches,
       opponent: schema.opponents,
+      tournament: schema.tournaments,
     })
     .from(schema.matches)
     .leftJoin(
       schema.opponents,
       eq(schema.opponents.id, schema.matches.opponentId)
+    )
+    .leftJoin(
+      schema.tournaments,
+      eq(schema.tournaments.id, schema.matches.tournamentId)
     )
     .where(eq(schema.matches.id, matchId));
 
@@ -176,6 +191,7 @@ export async function getMatchWithRallies(matchId: string) {
   const match = {
     ...row.match,
     opponentName: row.opponent?.name ?? row.match.opponent ?? null,
+    tournamentName: row.tournament?.name ?? null,
   };
 
   const rallyList = await db
@@ -380,4 +396,83 @@ export async function createRally(formData: FormData): Promise<void> {
   });
 
   revalidatePath(`/matches/${data.matchId}`);
+}
+
+export async function updateRally(formData: FormData): Promise<void> {
+  const parsed = rallyUpdateFormSchema.safeParse({
+    rallyId: formData.get("rallyId"),
+    matchId: formData.get("matchId"),
+    result: formData.get("result"),
+    pointReason: formData.get("pointReason"),
+    serveScore: formData.get("serveScore"),
+    placementScore: formData.get("placementScore"),
+    footworkScore: formData.get("footworkScore"),
+    tacticScore: formData.get("tacticScore"),
+    notes: formData.get("notes"),
+  });
+
+  if (!parsed.success) {
+    console.error(parsed.error.flatten().formErrors);
+    return;
+  }
+
+  const data = parsed.data;
+  const rallies = await db
+    .select()
+    .from(schema.rallies)
+    .where(eq(schema.rallies.matchId, data.matchId))
+    .orderBy(asc(schema.rallies.sequence), asc(schema.rallies.createdAt));
+
+  const updatedRallies = rallies.map((r) =>
+    r.id === data.rallyId
+      ? {
+          ...r,
+          result: data.result,
+          pointReason: data.pointReason,
+          serveScore: data.serveScore ?? null,
+          placementScore: data.placementScore ?? null,
+          footworkScore: data.footworkScore ?? null,
+          tacticScore: data.tacticScore ? Number(data.tacticScore) : null,
+          notes: data.notes || null,
+        }
+      : r
+  );
+
+  let currentSelf = 0;
+  let currentOpp = 0;
+
+  for (let i = 0; i < updatedRallies.length; i++) {
+    const r = updatedRallies[i];
+    const result = r.result;
+
+    const startScoreSelf = currentSelf;
+    const startScoreOpponent = currentOpp;
+    const endScoreSelf = result === "win" ? currentSelf + 1 : currentSelf;
+    const endScoreOpponent = result === "lose" ? currentOpp + 1 : currentOpp;
+
+    currentSelf = endScoreSelf;
+    currentOpp = endScoreOpponent;
+
+    await db
+      .update(schema.rallies)
+      .set({
+        sequence: i + 1,
+        result,
+        pointFor: result === "win" ? "self" : "opponent",
+        pointReason: r.pointReason || null,
+        startScoreSelf,
+        startScoreOpponent,
+        endScoreSelf,
+        endScoreOpponent,
+        serveScore: r.serveScore ?? null,
+        placementScore: r.placementScore ?? null,
+        footworkScore: r.footworkScore ?? null,
+        tacticScore: r.tacticScore ?? null,
+        notes: r.notes || null,
+      })
+      .where(eq(schema.rallies.id, r.id));
+  }
+
+  revalidatePath(`/matches/${data.matchId}`);
+  revalidatePath("/");
 }
