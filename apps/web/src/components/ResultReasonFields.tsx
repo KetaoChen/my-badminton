@@ -55,11 +55,17 @@ export function ResultReasonFields({
         </select>
       </div>
       <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">得失分原因</label>
+        <label className="text-sm font-medium text-slate-700">
+          {result === "win" ? "得分原因" : "失分原因"}
+        </label>
         <select
           name={reasonName}
           value={reason}
-          onChange={(e) => setReason(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            const allowed = reasonsFor(result);
+            setReason(allowed.includes(next as never) ? next : allowed[0]);
+          }}
           className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
           required
         >

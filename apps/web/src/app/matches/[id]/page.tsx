@@ -53,6 +53,12 @@ export default async function MatchDetailPage({ params }: PageProps) {
   const reasons = Object.entries(summary.reasons).sort(
     (a, b) => b[1].wins + b[1].losses - (a[1].wins + a[1].losses)
   );
+  const winReasons = reasons
+    .filter(([, counts]) => counts.wins > 0)
+    .sort((a, b) => b[1].wins - a[1].wins);
+  const loseReasons = reasons
+    .filter(([, counts]) => counts.losses > 0)
+    .sort((a, b) => b[1].losses - a[1].losses);
 
   const displayTitle = [
     data.match.tournamentName,
@@ -162,30 +168,61 @@ export default async function MatchDetailPage({ params }: PageProps) {
               {reasons.length === 0 ? (
                 <p className="mt-2 text-sm text-slate-500">暂无回合记录。</p>
               ) : (
-                <div className="mt-3 space-y-3">
-                  {reasons.map(([reason, counts]) => (
-                    <div
-                      key={reason}
-                      className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {reason}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {counts.wins + counts.losses} 次
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm font-semibold">
-                        <span className="rounded bg-emerald-100 px-2 py-1 text-emerald-700">
-                          +{counts.wins}
-                        </span>
-                        <span className="rounded bg-red-100 px-2 py-1 text-red-700">
-                          -{counts.losses}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                      得分原因
+                    </p>
+                    {winReasons.length === 0 ? (
+                      <p className="text-xs text-slate-500">暂无得分记录。</p>
+                    ) : (
+                      winReasons.map(([reason, counts]) => (
+                        <div
+                          key={reason}
+                          className="flex items-center justify-between rounded-lg border border-slate-200 bg-emerald-50 px-3 py-2"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">
+                              {reason}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {counts.wins} 次
+                            </p>
+                          </div>
+                          <span className="rounded bg-emerald-200 px-2 py-1 text-xs font-semibold text-emerald-800">
+                            +{counts.wins}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
+                      失分原因
+                    </p>
+                    {loseReasons.length === 0 ? (
+                      <p className="text-xs text-slate-500">暂无失分记录。</p>
+                    ) : (
+                      loseReasons.map(([reason, counts]) => (
+                        <div
+                          key={reason}
+                          className="flex items-center justify-between rounded-lg border border-slate-200 bg-rose-50 px-3 py-2"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900">
+                              {reason}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              {counts.losses} 次
+                            </p>
+                          </div>
+                          <span className="rounded bg-rose-200 px-2 py-1 text-xs font-semibold text-rose-800">
+                            -{counts.losses}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               )}
             </div>
