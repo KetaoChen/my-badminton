@@ -2,9 +2,9 @@ import Link from "next/link";
 
 import {
   createMatch,
-  getDashboardSummary,
   listMatches,
   listOpponents,
+  listTournaments,
 } from "@/lib/actions";
 
 function formatDate(value?: string | Date | null) {
@@ -16,10 +16,10 @@ function formatDate(value?: string | Date | null) {
 }
 
 export default async function Home() {
-  const [matches, opponents, dashboard] = await Promise.all([
+  const [matches, opponents, tournaments] = await Promise.all([
     listMatches(),
     listOpponents(),
-    getDashboardSummary(),
+    listTournaments(),
   ]);
 
   return (
@@ -52,62 +52,6 @@ export default async function Home() {
       </header>
 
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6">
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              比赛场次
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-900">
-              {dashboard.matchCount}
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              回合数
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-900">
-              {dashboard.rallyCount}
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              胜率
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-900">
-              {dashboard.winRate.toFixed(1)}%
-            </p>
-            <p className="text-xs text-slate-500">
-              {dashboard.wins} 胜 / {dashboard.losses} 负
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              近五场趋势
-            </p>
-            <div className="mt-2 text-xs text-slate-700">
-              {dashboard.recent.length === 0 ? (
-                <p className="text-slate-500">暂无数据</p>
-              ) : (
-                <div className="max-h-44 space-y-1 overflow-auto pr-1">
-                  {dashboard.recent.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between rounded-md px-2 py-1 hover:bg-slate-100"
-                    >
-                      <span className="truncate text-xs font-medium text-slate-800">
-                        {item.title} ({item.opponentName || "未填写"})
-                      </span>
-                      <span className="text-xs font-semibold text-slate-700">
-                        {item.wins}-{item.losses} ({item.winRate.toFixed(0)}%)
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
         <section className="grid gap-6 md:grid-cols-[1.1fr_1fr]">
           <div
             id="new-match"
@@ -147,14 +91,6 @@ export default async function Home() {
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
                     />
                   </div>
-                  <label className="mt-6 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                    <input
-                      type="checkbox"
-                      name="tournament"
-                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-                    />
-                    正式赛 (tournament)
-                  </label>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">
@@ -184,14 +120,26 @@ export default async function Home() {
                         name="trainingOpponent"
                         className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                       />
-                      标记为训练对手（出现在下拉列表）
+                      标记为训练对手
                     </label>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">
-                    赛事名称（正式赛）
+                    赛事名称（填或选则视为正式赛）
                   </label>
+                  <select
+                    name="tournamentId"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+                    defaultValue=""
+                  >
+                    <option value="">选择已有赛事</option>
+                    {tournaments.map((tournament) => (
+                      <option key={tournament.id} value={tournament.id}>
+                        {tournament.name}
+                      </option>
+                    ))}
+                  </select>
                   <input
                     name="tournamentName"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
@@ -243,7 +191,7 @@ export default async function Home() {
                     className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 transition hover:-translate-y-0.5 hover:shadow-sm"
                   >
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="space-y-1">
                         <p className="text-sm font-semibold text-slate-900">
                           {match.title}
                         </p>
@@ -251,6 +199,25 @@ export default async function Home() {
                           {formatDate(match.matchDate)} · 对手：{" "}
                           {match.opponentName || "未填写"}
                         </p>
+                        <p className="text-xs text-slate-500">
+                          得分情况：{match.wins ?? 0} - {match.losses ?? 0}
+                          （回合）
+                        </p>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                            (match.wins ?? 0) > (match.losses ?? 0)
+                              ? "bg-emerald-100 text-emerald-700"
+                              : (match.wins ?? 0) < (match.losses ?? 0)
+                              ? "bg-rose-100 text-rose-700"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {(match.wins ?? 0) > (match.losses ?? 0)
+                            ? "胜"
+                            : (match.wins ?? 0) < (match.losses ?? 0)
+                            ? "负"
+                            : "平"}
+                        </span>
                       </div>
                       <Link
                         href={`/matches/${match.id}`}

@@ -44,7 +44,6 @@ export const matches = pgTable("matches", {
   tournamentId: uuid("tournament_id").references(() => tournaments.id, {
     onDelete: "set null",
   }),
-  tournament: boolean("tournament").notNull().default(false),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

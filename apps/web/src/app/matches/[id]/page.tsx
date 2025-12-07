@@ -4,6 +4,7 @@ import {
   createRally,
   getMatchWithRallies,
   listOpponents,
+  listTournaments,
   updateMatch,
 } from "@/lib/actions";
 import { summarizeMatch } from "@/lib/stats";
@@ -20,9 +21,10 @@ function formatInputDate(value?: string | Date | null) {
 
 export default async function MatchDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [data, opponents] = await Promise.all([
+  const [data, opponents, tournaments] = await Promise.all([
     getMatchWithRallies(id),
     listOpponents(),
+    listTournaments(),
   ]);
 
   if (!data) {
@@ -97,22 +99,23 @@ export default async function MatchDetailPage({ params }: PageProps) {
               </select>
             </div>
             <div className="flex items-end justify-end gap-2">
-              <label className="flex items-center gap-2 text-xs text-slate-600">
-                <input
-                  type="checkbox"
-                  name="tournament"
-                  defaultChecked={Boolean(data.match.tournament)}
-                  className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-                />
-                正式赛
-              </label>
+              <select
+                name="tournamentId"
+                defaultValue={data.match.tournamentId ?? ""}
+                className="w-40 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs shadow-inner focus:border-slate-400 focus:outline-none"
+              >
+                <option value="">选择已有赛事</option>
+                {tournaments.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
               <input
                 name="tournamentName"
-                defaultValue={
-                  data.match.tournament ? data.match.notes ?? "" : ""
-                }
-                className="w-32 rounded-lg border border-slate-200 px-2 py-1 text-xs shadow-inner focus:border-slate-400 focus:outline-none"
-                placeholder="赛事名称"
+                defaultValue=""
+                className="w-40 rounded-lg border border-slate-200 px-2 py-1 text-xs shadow-inner focus:border-slate-400 focus:outline-none"
+                placeholder="赛事名称（填或选即为正式赛）"
               />
               <button
                 type="submit"

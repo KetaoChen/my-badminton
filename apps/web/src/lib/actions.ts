@@ -1,7 +1,7 @@
 "use server";
 
 import { db, schema } from "@my-badminton/db/client";
-import { desc, eq, inArray, sql, or } from "drizzle-orm";
+import { desc, eq, sql, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -27,7 +27,6 @@ const matchFormSchema = z.object({
   opponentId: optionalUuid,
   opponent: z.string().trim().optional(),
   trainingOpponent: checkboxBoolean,
-  tournament: checkboxBoolean,
   tournamentId: optionalUuid,
   tournamentName: z.string().trim().optional(),
   notes: z.string().trim().optional(),
@@ -80,6 +79,13 @@ export async function listOpponents() {
     .orderBy(desc(schema.opponents.createdAt));
 }
 
+export async function listTournaments() {
+  return db
+    .select()
+    .from(schema.tournaments)
+    .orderBy(desc(schema.tournaments.createdAt));
+}
+
 export async function createOpponent(formData: FormData): Promise<void> {
   const parsed = opponentFormSchema.safeParse({
     name: formData.get("name"),
@@ -114,10 +120,40 @@ export async function listMatches() {
     )
     .orderBy(desc(schema.matches.createdAt));
 
-  return rows.map((row) => ({
-    ...row.match,
-    opponentName: row.opponent?.name ?? row.match.opponent ?? null,
-  }));
+  const stats = await db
+    .select({
+      matchId: schema.rallies.matchId,
+      wins: sql<number>`sum(case when ${schema.rallies.result} = 'win' then 1 else 0 end)`,
+      losses: sql<number>`sum(case when ${schema.rallies.result} = 'lose' then 1 else 0 end)`,
+      total: sql<number>`count(*)`,
+    })
+    .from(schema.rallies)
+    .groupBy(schema.rallies.matchId);
+
+  const statsMap = new Map<
+    string,
+    { wins: number; losses: number; total: number }
+  >();
+  for (const s of stats) {
+    statsMap.set(s.matchId, {
+      wins: Number(s.wins ?? 0),
+      losses: Number(s.losses ?? 0),
+      total: Number(s.total ?? 0),
+    });
+  }
+
+  return rows.map((row) => {
+    const agg = statsMap.get(row.match.id) ?? { wins: 0, losses: 0, total: 0 };
+    return {
+      ...row.match,
+      opponentName: row.opponent?.name ?? row.match.opponent ?? null,
+      wins: agg.wins,
+      losses: agg.losses,
+      total: agg.total,
+      winRate:
+        agg.total === 0 ? 0 : Math.round((agg.wins / agg.total) * 1000) / 10,
+    };
+  });
 }
 
 export async function getMatchWithRallies(matchId: string) {
@@ -151,112 +187,6 @@ export async function getMatchWithRallies(matchId: string) {
   return { match, rallies: rallyList };
 }
 
-export async function getDashboardSummary() {
-  const [{ rallyCount, winCount, loseCount }] =
-    (await db
-      .select({
-        rallyCount: sql<number>`count(*)`,
-        winCount: sql<number>`sum(case when ${schema.rallies.result} = 'win' then 1 else 0 end)`,
-        loseCount: sql<number>`sum(case when ${schema.rallies.result} = 'lose' then 1 else 0 end)`,
-      })
-      .from(schema.rallies)) ?? [];
-
-  const [{ matchCount }] =
-    (await db
-      .select({ matchCount: sql<number>`count(*)` })
-      .from(schema.matches)) ?? [];
-
-  const recentMatchesRows = await db
-    .select({
-      match: schema.matches,
-      opponent: schema.opponents,
-    })
-    .from(schema.matches)
-    .leftJoin(
-      schema.opponents,
-      eq(schema.opponents.id, schema.matches.opponentId)
-    )
-    .orderBy(desc(schema.matches.matchDate ?? schema.matches.createdAt))
-    .limit(5);
-
-  const recentIds = recentMatchesRows.map((row) => row.match.id);
-
-  const recentAggregates =
-    recentIds.length === 0
-      ? []
-      : await db
-          .select({
-            matchId: schema.rallies.matchId,
-            wins: sql<number>`sum(case when ${schema.rallies.result} = 'win' then 1 else 0 end)`,
-            losses: sql<number>`sum(case when ${schema.rallies.result} = 'lose' then 1 else 0 end)`,
-            total: sql<number>`count(*)`,
-          })
-          .from(schema.rallies)
-          .where(inArray(schema.rallies.matchId, recentIds))
-          .groupBy(schema.rallies.matchId);
-
-  const aggMap = new Map<
-    string,
-    { wins: number; losses: number; total: number }
-  >();
-  for (const agg of recentAggregates) {
-    aggMap.set(agg.matchId, {
-      wins: Number(agg.wins ?? 0),
-      losses: Number(agg.losses ?? 0),
-      total: Number(agg.total ?? 0),
-    });
-  }
-
-  const recent = recentMatchesRows.map((row) => {
-    const stats = aggMap.get(row.match.id) ?? { wins: 0, losses: 0, total: 0 };
-    return {
-      id: row.match.id,
-      title: row.match.title,
-      matchDate: row.match.matchDate,
-      createdAt: row.match.createdAt,
-      opponentName: row.opponent?.name ?? row.match.opponent ?? null,
-      ...stats,
-      winRate:
-        stats.total === 0
-          ? 0
-          : Math.round((stats.wins / stats.total) * 1000) / 10,
-    };
-  });
-
-  const topReasons = await db
-    .select({
-      reason: schema.rallies.pointReason,
-      wins: sql<number>`sum(case when ${schema.rallies.result} = 'win' then 1 else 0 end)`,
-      losses: sql<number>`sum(case when ${schema.rallies.result} = 'lose' then 1 else 0 end)`,
-      total: sql<number>`count(*)`,
-    })
-    .from(schema.rallies)
-    .groupBy(schema.rallies.pointReason)
-    .orderBy(desc(sql<number>`count(*)`))
-    .limit(5);
-
-  const totalRallies = Number(rallyCount ?? 0);
-  const wins = Number(winCount ?? 0);
-  const losses = Number(loseCount ?? 0);
-  const winRate =
-    totalRallies === 0 ? 0 : Math.round((wins / totalRallies) * 1000) / 10;
-
-  return {
-    matchCount: Number(matchCount ?? 0),
-    rallyCount: totalRallies,
-    wins,
-    losses,
-    winRate,
-    recent,
-    topReasons: topReasons.map((item) => ({
-      reason: item.reason ?? "未填写",
-      wins: Number(item.wins ?? 0),
-      losses: Number(item.losses ?? 0),
-      total: Number(item.total ?? 0),
-    })),
-  };
-}
-
 export async function createMatch(formData: FormData): Promise<void> {
   const parsed = matchFormSchema.safeParse({
     title: formData.get("title"),
@@ -264,7 +194,6 @@ export async function createMatch(formData: FormData): Promise<void> {
     opponentId: formData.get("opponentId"),
     opponent: formData.get("opponent"),
     trainingOpponent: formData.get("trainingOpponent"),
-    tournament: formData.get("tournament"),
     tournamentId: formData.get("tournamentId"),
     tournamentName: formData.get("tournamentName"),
     notes: formData.get("notes"),
@@ -281,7 +210,6 @@ export async function createMatch(formData: FormData): Promise<void> {
     opponent,
     opponentId,
     trainingOpponent,
-    tournament,
     tournamentId,
     tournamentName,
     notes,
@@ -302,7 +230,7 @@ export async function createMatch(formData: FormData): Promise<void> {
     finalOpponentId = inserted?.id ?? null;
   }
 
-  if (tournament && !tournamentId) {
+  if ((tournamentId || tournamentName) && !tournamentId) {
     const [insertedTournament] = await db
       .insert(schema.tournaments)
       .values({
@@ -316,7 +244,6 @@ export async function createMatch(formData: FormData): Promise<void> {
     title,
     opponentId: finalOpponentId,
     opponent: opponent || null,
-    tournament: !!tournament,
     tournamentId: finalTournamentId,
     notes: notes || null,
     matchDate: matchDate || null,
@@ -334,7 +261,6 @@ export async function updateMatch(
     matchDate: formData.get("matchDate"),
     opponentId: formData.get("opponentId"),
     opponent: formData.get("opponent"),
-    tournament: formData.get("tournament"),
     tournamentId: formData.get("tournamentId"),
     tournamentName: formData.get("tournamentName"),
     notes: formData.get("notes"),
@@ -350,7 +276,6 @@ export async function updateMatch(
     matchDate,
     opponent,
     opponentId,
-    tournament,
     tournamentId,
     tournamentName,
     notes,
@@ -358,7 +283,7 @@ export async function updateMatch(
 
   let finalTournamentId = tournamentId || null;
 
-  if (tournament && !tournamentId) {
+  if ((tournamentId || tournamentName) && !tournamentId) {
     const [insertedTournament] = await db
       .insert(schema.tournaments)
       .values({
@@ -374,8 +299,7 @@ export async function updateMatch(
       title,
       opponentId: opponentId || null,
       opponent: opponent || null,
-      tournament: !!tournament,
-      tournamentId: !!tournament ? finalTournamentId : null,
+      tournamentId: finalTournamentId,
       notes: notes || null,
       matchDate: matchDate || null,
     })
