@@ -42,10 +42,10 @@ export default async function Home() {
               数据存云端 · 无需登录
             </span>
             <Link
-              href="#new-match"
-              className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+              href="/analysis"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
             >
-              新建比赛
+              比赛分析
             </Link>
           </div>
         </div>
@@ -188,6 +188,16 @@ export default async function Home() {
                     </label>
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    赛事名称（正式赛）
+                  </label>
+                  <input
+                    name="tournamentName"
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
+                    placeholder="如：俱乐部公开赛、联赛等"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
@@ -261,51 +271,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                常见得失分原因
-              </p>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Top 5 原因
-              </h2>
-            </div>
-          </div>
-          {dashboard.topReasons.length === 0 ? (
-            <p className="text-sm text-slate-500">暂无数据。</p>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {dashboard.topReasons.map((item) => (
-                <div
-                  key={item.reason}
-                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
-                >
-                  <p className="text-sm font-semibold text-slate-900">
-                    {item.reason}
-                  </p>
-                  <p className="text-xs text-slate-600">
-                    {item.total} 次 · 胜 {item.wins} / 负 {item.losses}
-                  </p>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded bg-slate-200">
-                    <div
-                      className="h-2 bg-emerald-500"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          Math.max(
-                            0,
-                            (item.wins / Math.max(1, item.total)) * 100
-                          )
-                        )}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        {/* 常见得失分原因区块已移除 */}
       </main>
     </div>
   );

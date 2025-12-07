@@ -24,12 +24,24 @@ export const opponents = pgTable("opponents", {
     .defaultNow(),
 });
 
+export const tournaments = pgTable("tournaments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const matches = pgTable("matches", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
   matchDate: date("match_date"),
   opponent: text("opponent"),
   opponentId: uuid("opponent_id").references(() => opponents.id, {
+    onDelete: "set null",
+  }),
+  tournamentId: uuid("tournament_id").references(() => tournaments.id, {
     onDelete: "set null",
   }),
   tournament: boolean("tournament").notNull().default(false),

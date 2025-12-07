@@ -104,8 +104,16 @@ export default async function MatchDetailPage({ params }: PageProps) {
                   defaultChecked={Boolean(data.match.tournament)}
                   className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                 />
-                正式赛 (tournament)
+                正式赛
               </label>
+              <input
+                name="tournamentName"
+                defaultValue={
+                  data.match.tournament ? data.match.notes ?? "" : ""
+                }
+                className="w-32 rounded-lg border border-slate-200 px-2 py-1 text-xs shadow-inner focus:border-slate-400 focus:outline-none"
+                placeholder="赛事名称"
+              />
               <button
                 type="submit"
                 className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"

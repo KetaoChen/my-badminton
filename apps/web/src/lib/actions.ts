@@ -28,6 +28,8 @@ const matchFormSchema = z.object({
   opponent: z.string().trim().optional(),
   trainingOpponent: checkboxBoolean,
   tournament: checkboxBoolean,
+  tournamentId: optionalUuid,
+  tournamentName: z.string().trim().optional(),
   notes: z.string().trim().optional(),
 });
 
@@ -263,6 +265,8 @@ export async function createMatch(formData: FormData): Promise<void> {
     opponent: formData.get("opponent"),
     trainingOpponent: formData.get("trainingOpponent"),
     tournament: formData.get("tournament"),
+    tournamentId: formData.get("tournamentId"),
+    tournamentName: formData.get("tournamentName"),
     notes: formData.get("notes"),
   });
 
@@ -278,10 +282,13 @@ export async function createMatch(formData: FormData): Promise<void> {
     opponentId,
     trainingOpponent,
     tournament,
+    tournamentId,
+    tournamentName,
     notes,
   } = parsed.data;
 
   let finalOpponentId = opponentId || null;
+  let finalTournamentId = tournamentId || null;
 
   if (!opponentId && opponent) {
     const [inserted] = await db
@@ -295,11 +302,22 @@ export async function createMatch(formData: FormData): Promise<void> {
     finalOpponentId = inserted?.id ?? null;
   }
 
+  if (tournament && !tournamentId) {
+    const [insertedTournament] = await db
+      .insert(schema.tournaments)
+      .values({
+        name: tournamentName || "未命名赛事",
+      })
+      .returning({ id: schema.tournaments.id });
+    finalTournamentId = insertedTournament?.id ?? null;
+  }
+
   await db.insert(schema.matches).values({
     title,
     opponentId: finalOpponentId,
     opponent: opponent || null,
     tournament: !!tournament,
+    tournamentId: finalTournamentId,
     notes: notes || null,
     matchDate: matchDate || null,
   });
@@ -317,6 +335,8 @@ export async function updateMatch(
     opponentId: formData.get("opponentId"),
     opponent: formData.get("opponent"),
     tournament: formData.get("tournament"),
+    tournamentId: formData.get("tournamentId"),
+    tournamentName: formData.get("tournamentName"),
     notes: formData.get("notes"),
   });
 
@@ -325,8 +345,28 @@ export async function updateMatch(
     return;
   }
 
-  const { title, matchDate, opponent, opponentId, tournament, notes } =
-    parsed.data;
+  const {
+    title,
+    matchDate,
+    opponent,
+    opponentId,
+    tournament,
+    tournamentId,
+    tournamentName,
+    notes,
+  } = parsed.data;
+
+  let finalTournamentId = tournamentId || null;
+
+  if (tournament && !tournamentId) {
+    const [insertedTournament] = await db
+      .insert(schema.tournaments)
+      .values({
+        name: tournamentName || "未命名赛事",
+      })
+      .returning({ id: schema.tournaments.id });
+    finalTournamentId = insertedTournament?.id ?? null;
+  }
 
   await db
     .update(schema.matches)
@@ -335,6 +375,7 @@ export async function updateMatch(
       opponentId: opponentId || null,
       opponent: opponent || null,
       tournament: !!tournament,
+      tournamentId: !!tournament ? finalTournamentId : null,
       notes: notes || null,
       matchDate: matchDate || null,
     })
