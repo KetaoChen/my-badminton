@@ -28,6 +28,7 @@ export function summarizeMatch(ralliesList: Rally[]): MatchSummary {
   };
 
   for (const rally of ralliesList) {
+    if (rally.excludeFromScore) continue;
     if (rally.result === "win") summary.wins += 1;
     if (rally.result === "lose") summary.losses += 1;
 

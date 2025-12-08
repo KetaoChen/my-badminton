@@ -58,6 +58,9 @@ export async function getAnalysis(filters: AnalysisFilters) {
   }
 
   const whereMatches = conditions.length > 0 ? and(...conditions) : undefined;
+  const rallyScored = eq(schema.rallies.excludeFromScore, false);
+  const rallyWhere =
+    whereMatches === undefined ? rallyScored : and(whereMatches, rallyScored);
 
   // Basic counts
   const [totals] =
@@ -70,7 +73,7 @@ export async function getAnalysis(filters: AnalysisFilters) {
       })
       .from(schema.rallies)
       .innerJoin(schema.matches, eq(schema.matches.id, schema.rallies.matchId))
-      .where(whereMatches)) ?? [];
+      .where(rallyWhere)) ?? [];
 
   const matchOutcomes =
     (await db
@@ -81,7 +84,7 @@ export async function getAnalysis(filters: AnalysisFilters) {
       })
       .from(schema.matches)
       .leftJoin(schema.rallies, eq(schema.matches.id, schema.rallies.matchId))
-      .where(whereMatches)
+      .where(rallyWhere)
       .groupBy(schema.matches.id)) ?? [];
 
   // Ability averages
@@ -95,7 +98,7 @@ export async function getAnalysis(filters: AnalysisFilters) {
       })
       .from(schema.rallies)
       .innerJoin(schema.matches, eq(schema.matches.id, schema.rallies.matchId))
-      .where(whereMatches)) ?? [];
+      .where(rallyWhere)) ?? [];
 
   // Opponent stats
   const opponentStats = await db
@@ -112,7 +115,7 @@ export async function getAnalysis(filters: AnalysisFilters) {
       schema.opponents,
       eq(schema.opponents.id, schema.matches.opponentId)
     )
-    .where(whereMatches)
+    .where(rallyWhere)
     .groupBy(
       schema.matches.opponentId,
       schema.opponents.name,
@@ -126,13 +129,13 @@ export async function getAnalysis(filters: AnalysisFilters) {
   // Reason share averages per match (win)
   const winWhere =
     whereMatches === undefined
-      ? eq(schema.rallies.result, "win")
-      : and(eq(schema.rallies.result, "win"), whereMatches);
+      ? and(eq(schema.rallies.result, "win"), rallyScored)
+      : and(eq(schema.rallies.result, "win"), rallyScored, whereMatches);
 
   const loseWhere =
     whereMatches === undefined
-      ? eq(schema.rallies.result, "lose")
-      : and(eq(schema.rallies.result, "lose"), whereMatches);
+      ? and(eq(schema.rallies.result, "lose"), rallyScored)
+      : and(eq(schema.rallies.result, "lose"), rallyScored, whereMatches);
 
   const winTotalsByMatch = await db
     .select({
@@ -344,6 +347,9 @@ export async function getAnalysis(filters: AnalysisFilters) {
 
 function abilitySeriesQuery(conditions: Condition[]) {
   const whereMatches = conditions.length > 0 ? and(...conditions) : undefined;
+  const rallyScored = eq(schema.rallies.excludeFromScore, false);
+  const rallyWhere =
+    whereMatches === undefined ? rallyScored : and(whereMatches, rallyScored);
   return db
     .select({
       id: schema.matches.id,
@@ -361,7 +367,7 @@ function abilitySeriesQuery(conditions: Condition[]) {
       schema.opponents,
       eq(schema.opponents.id, schema.matches.opponentId)
     )
-    .where(whereMatches)
+    .where(rallyWhere)
     .groupBy(
       schema.matches.id,
       schema.matches.title,

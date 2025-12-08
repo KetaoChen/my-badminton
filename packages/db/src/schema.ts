@@ -61,6 +61,7 @@ export const rallies = pgTable(
     result: rallyResult("result").notNull(),
     pointFor: pointFor("point_for").notNull(),
     pointReason: text("point_reason"),
+    excludeFromScore: boolean("exclude_from_score").notNull().default(false),
     startScoreSelf: integer("start_score_self"),
     startScoreOpponent: integer("start_score_opponent"),
     endScoreSelf: integer("end_score_self"),

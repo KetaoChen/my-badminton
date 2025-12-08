@@ -3,6 +3,7 @@
 import { db, schema } from "@my-badminton/db/client";
 import { asc, desc, eq, sql, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 const optionalUuid = z
@@ -56,6 +57,7 @@ const rallyFormSchema = z.object({
   matchId: z.string().uuid(),
   result: z.enum(["win", "lose"]),
   pointReason: z.enum(rallyPointReasons),
+  excludeFromScore: checkboxBoolean,
   serveScore: z
     .string()
     .trim()
@@ -73,6 +75,11 @@ const rallyFormSchema = z.object({
     .transform((v) => (v ? Number(v) : null)),
   tacticScore: z.string().trim().optional(),
   notes: z.string().trim().optional(),
+});
+
+const rallyDeleteSchema = z.object({
+  matchId: z.string().uuid(),
+  rallyId: z.string().uuid(),
 });
 
 const rallyUpdateFormSchema = rallyFormSchema.extend({
@@ -146,6 +153,7 @@ export async function listMatches() {
       total: sql<number>`count(*)`,
     })
     .from(schema.rallies)
+    .where(eq(schema.rallies.excludeFromScore, false))
     .groupBy(schema.rallies.matchId);
 
   const statsMap = new Map<
@@ -277,6 +285,12 @@ export async function createMatch(formData: FormData): Promise<void> {
   revalidatePath("/");
 }
 
+export async function deleteMatch(matchId: string): Promise<void> {
+  await db.delete(schema.matches).where(eq(schema.matches.id, matchId));
+  revalidatePath("/");
+  redirect("/");
+}
+
 export async function updateMatch(
   matchId: string,
   formData: FormData
@@ -339,6 +353,7 @@ export async function createRally(formData: FormData): Promise<void> {
     matchId: formData.get("matchId"),
     result: formData.get("result"),
     pointReason: formData.get("pointReason"),
+    excludeFromScore: formData.get("excludeFromScore"),
     serveScore: formData.get("serveScore"),
     placementScore: formData.get("placementScore"),
     footworkScore: formData.get("footworkScore"),
@@ -353,44 +368,47 @@ export async function createRally(formData: FormData): Promise<void> {
 
   const data = parsed.data;
 
-  let sequence: number | undefined = undefined;
-
-  if (sequence === undefined) {
-    const [current] = await db
-      .select({
-        maxSequence: sql<number>`coalesce(max(${schema.rallies.sequence}), 0)`,
-      })
-      .from(schema.rallies)
-      .where(eq(schema.rallies.matchId, data.matchId));
-
-    sequence = (current?.maxSequence ?? 0) + 1;
-  }
-
-  const [last] = await db
-    .select()
+  const [current] = await db
+    .select({
+      maxSequence: sql<number>`coalesce(max(${schema.rallies.sequence}), 0)`,
+    })
     .from(schema.rallies)
-    .where(eq(schema.rallies.matchId, data.matchId))
-    .orderBy(desc(schema.rallies.sequence))
-    .limit(1);
+    .where(eq(schema.rallies.matchId, data.matchId));
 
-  const prevSelf =
-    last?.endScoreSelf ?? last?.startScoreSelf ?? last?.endScoreSelf ?? 0;
-  const prevOpp =
-    last?.endScoreOpponent ??
-    last?.startScoreOpponent ??
-    last?.endScoreOpponent ??
-    0;
+  const sequence = (current?.maxSequence ?? 0) + 1;
+
+  const [scoreAgg] = await db
+    .select({
+      wins: sql<number>`sum(case when ${schema.rallies.result} = 'win' and ${schema.rallies.excludeFromScore} = false then 1 else 0 end)`,
+      losses: sql<number>`sum(case when ${schema.rallies.result} = 'lose' and ${schema.rallies.excludeFromScore} = false then 1 else 0 end)`,
+    })
+    .from(schema.rallies)
+    .where(eq(schema.rallies.matchId, data.matchId));
+
+  const prevSelf = Number(scoreAgg?.wins ?? 0);
+  const prevOpp = Number(scoreAgg?.losses ?? 0);
 
   const startScoreSelf = prevSelf;
   const startScoreOpponent = prevOpp;
-  const endScoreSelf = data.result === "win" ? prevSelf + 1 : prevSelf;
-  const endScoreOpponent = data.result === "lose" ? prevOpp + 1 : prevOpp;
+  const endScoreSelf =
+    data.excludeFromScore || !data.result
+      ? prevSelf
+      : data.result === "win"
+      ? prevSelf + 1
+      : prevSelf;
+  const endScoreOpponent =
+    data.excludeFromScore || !data.result
+      ? prevOpp
+      : data.result === "lose"
+      ? prevOpp + 1
+      : prevOpp;
   const tacticScore = data.tacticScore ? Number(data.tacticScore) : null;
 
   await db.insert(schema.rallies).values({
     matchId: data.matchId,
     sequence,
     result: data.result,
+    excludeFromScore: !!data.excludeFromScore,
     pointFor: data.result === "win" ? "self" : "opponent",
     pointReason: data.pointReason || null,
     startScoreSelf,
@@ -413,6 +431,7 @@ export async function updateRally(formData: FormData): Promise<void> {
     matchId: formData.get("matchId"),
     result: formData.get("result"),
     pointReason: formData.get("pointReason"),
+    excludeFromScore: formData.get("excludeFromScore"),
     serveScore: formData.get("serveScore"),
     placementScore: formData.get("placementScore"),
     footworkScore: formData.get("footworkScore"),
@@ -438,6 +457,7 @@ export async function updateRally(formData: FormData): Promise<void> {
           ...r,
           result: data.result,
           pointReason: data.pointReason,
+          excludeFromScore: !!data.excludeFromScore,
           serveScore: data.serveScore ?? null,
           placementScore: data.placementScore ?? null,
           footworkScore: data.footworkScore ?? null,
@@ -456,17 +476,30 @@ export async function updateRally(formData: FormData): Promise<void> {
 
     const startScoreSelf = currentSelf;
     const startScoreOpponent = currentOpp;
-    const endScoreSelf = result === "win" ? currentSelf + 1 : currentSelf;
-    const endScoreOpponent = result === "lose" ? currentOpp + 1 : currentOpp;
+    const endScoreSelf =
+      r.excludeFromScore || !result
+        ? currentSelf
+        : result === "win"
+        ? currentSelf + 1
+        : currentSelf;
+    const endScoreOpponent =
+      r.excludeFromScore || !result
+        ? currentOpp
+        : result === "lose"
+        ? currentOpp + 1
+        : currentOpp;
 
-    currentSelf = endScoreSelf;
-    currentOpp = endScoreOpponent;
+    if (!r.excludeFromScore) {
+      currentSelf = endScoreSelf;
+      currentOpp = endScoreOpponent;
+    }
 
     await db
       .update(schema.rallies)
       .set({
         sequence: i + 1,
         result,
+        excludeFromScore: !!r.excludeFromScore,
         pointFor: result === "win" ? "self" : "opponent",
         pointReason: r.pointReason || null,
         startScoreSelf,
@@ -483,5 +516,77 @@ export async function updateRally(formData: FormData): Promise<void> {
   }
 
   revalidatePath(`/matches/${data.matchId}`);
+  revalidatePath("/");
+}
+
+export async function deleteRally(formData: FormData): Promise<void> {
+  const parsed = rallyDeleteSchema.safeParse({
+    matchId: formData.get("matchId"),
+    rallyId: formData.get("rallyId"),
+  });
+
+  if (!parsed.success) {
+    console.error(parsed.error.flatten().formErrors);
+    return;
+  }
+
+  const { matchId, rallyId } = parsed.data;
+
+  const ralliesList = await db
+    .select()
+    .from(schema.rallies)
+    .where(eq(schema.rallies.matchId, matchId))
+    .orderBy(asc(schema.rallies.sequence), asc(schema.rallies.createdAt));
+
+  const remaining = ralliesList.filter((r) => r.id !== rallyId);
+
+  let currentSelf = 0;
+  let currentOpp = 0;
+
+  for (let i = 0; i < remaining.length; i++) {
+    const r = remaining[i];
+    const result = r.result;
+    const startScoreSelf = currentSelf;
+    const startScoreOpponent = currentOpp;
+    const endScoreSelf =
+      r.excludeFromScore || !result
+        ? currentSelf
+        : result === "win"
+        ? currentSelf + 1
+        : currentSelf;
+    const endScoreOpponent =
+      r.excludeFromScore || !result
+        ? currentOpp
+        : result === "lose"
+        ? currentOpp + 1
+        : currentOpp;
+
+    if (!r.excludeFromScore) {
+      currentSelf = endScoreSelf;
+      currentOpp = endScoreOpponent;
+    }
+
+    await db
+      .update(schema.rallies)
+      .set({
+        sequence: i + 1,
+        result,
+        pointFor: result === "win" ? "self" : "opponent",
+        pointReason: r.pointReason || null,
+        startScoreSelf,
+        startScoreOpponent,
+        endScoreSelf,
+        endScoreOpponent,
+        serveScore: r.serveScore ?? null,
+        placementScore: r.placementScore ?? null,
+        footworkScore: r.footworkScore ?? null,
+        tacticScore: r.tacticScore ?? null,
+        excludeFromScore: !!r.excludeFromScore,
+        notes: r.notes || null,
+      })
+      .where(eq(schema.rallies.id, r.id));
+  }
+
+  revalidatePath(`/matches/${matchId}`);
   revalidatePath("/");
 }

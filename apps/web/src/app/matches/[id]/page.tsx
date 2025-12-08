@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import {
   createRally,
+  deleteMatch,
+  deleteRally,
   getMatchWithRallies,
   listOpponents,
   listTournaments,
@@ -92,6 +94,17 @@ export default async function MatchDetailPage({ params }: PageProps) {
               tournaments={tournaments}
               action={updateMatch.bind(null, data.match.id)}
             />
+            <form
+              action={deleteMatch.bind(null, data.match.id)}
+              className="hidden sm:block"
+            >
+              <button
+                type="submit"
+                className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600"
+              >
+                删除比赛
+              </button>
+            </form>
             <Link
               href={`/matches/${data.match.id}/export`}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
@@ -240,6 +253,14 @@ export default async function MatchDetailPage({ params }: PageProps) {
                 defaultResult="win"
                 defaultReason="对手失误"
               />
+              <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+                <input
+                  type="checkbox"
+                  name="excludeFromScore"
+                  className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                />
+                不计入比分
+              </label>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -414,8 +435,30 @@ export default async function MatchDetailPage({ params }: PageProps) {
                             placementScore: rally.placementScore,
                             footworkScore: rally.footworkScore,
                             notes: rally.notes,
+                            excludeFromScore: rally.excludeFromScore,
                           }}
                         />
+                        <form
+                          action={deleteRally}
+                          className="mt-2 inline-block ml-2"
+                        >
+                          <input
+                            type="hidden"
+                            name="matchId"
+                            value={data.match.id}
+                          />
+                          <input
+                            type="hidden"
+                            name="rallyId"
+                            value={rally.id}
+                          />
+                          <button
+                            type="submit"
+                            className="text-xs font-semibold text-rose-600 underline-offset-4 hover:underline"
+                          >
+                            删除
+                          </button>
+                        </form>
                       </td>
                     </tr>
                   ))}

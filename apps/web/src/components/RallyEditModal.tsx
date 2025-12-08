@@ -16,6 +16,7 @@ type Rally = {
   placementScore: number | null;
   footworkScore: number | null;
   notes: string | null;
+  excludeFromScore?: boolean | null;
 };
 
 type Props = {
@@ -59,6 +60,16 @@ export function RallyEditModal({ rally }: Props) {
             resultName="result"
             reasonName="pointReason"
           />
+
+          <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
+            <input
+              type="checkbox"
+              name="excludeFromScore"
+              defaultChecked={!!rally.excludeFromScore}
+              className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+            />
+            不计入比分
+          </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
