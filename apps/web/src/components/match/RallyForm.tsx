@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useTransition } from "react";
+
 import { Button, Checkbox, Col, Form, Input, InputNumber, Row } from "antd";
 
 import { createRally } from "@/lib/actions";
@@ -11,13 +13,30 @@ type Props = {
 };
 
 export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
   return (
     <Form
       layout="vertical"
       component="form"
-      action={createRally}
       size="middle"
       className="space-y-2"
+      onSubmitCapture={(event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const formData = new FormData(form);
+        setError(null);
+        startTransition(async () => {
+          try {
+            await createRally(formData);
+            form.reset();
+          } catch (e) {
+            console.error(e);
+            setError("保存失败，请重试");
+          }
+        });
+      }}
     >
       <input type="hidden" name="matchId" value={matchId} />
 
@@ -28,13 +47,17 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
       />
 
       <Form.Item name="excludeFromScore" valuePropName="checked" className="!mb-3">
-        <Checkbox name="excludeFromScore">不计入比分</Checkbox>
+        <Checkbox name="excludeFromScore" disabled={pending}>
+          不计入比分
+        </Checkbox>
       </Form.Item>
 
       <Row gutter={12}>
         <Col span={12}>
           <Form.Item name="tacticUsed" valuePropName="checked" className="!mb-3">
-            <Checkbox name="tacticUsed">使用战术</Checkbox>
+            <Checkbox name="tacticUsed" disabled={pending}>
+              使用战术
+            </Checkbox>
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -46,6 +69,7 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
               className="w-full"
               placeholder="0-10"
               controls={false}
+              disabled={pending}
             />
           </Form.Item>
         </Col>
@@ -56,11 +80,25 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
           name="notes"
           rows={3}
           placeholder="如击球模式、弱点、战术等"
+          disabled={pending}
         />
       </Form.Item>
 
+      {error ? (
+        <div className="text-sm text-red-600" role="alert">
+          {error}
+        </div>
+      ) : null}
+
       <Form.Item className="!mb-0">
-        <Button type="primary" htmlType="submit" block style={{ paddingInline: 16 }}>
+        <Button
+          type="primary"
+          htmlType="submit"
+          block
+          style={{ paddingInline: 16 }}
+          loading={pending}
+          disabled={pending}
+        >
           保存回合
         </Button>
       </Form.Item>

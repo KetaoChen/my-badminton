@@ -1,6 +1,8 @@
 "use client";
 
-import { Button, Empty, Space, Table, Tag } from "antd";
+import { useState } from "react";
+
+import { Button, Empty, Popconfirm, Space, Table, Tag } from "antd";
 
 import { deleteRally } from "@/lib/actions";
 import { RallyEditModal } from "../RallyEditModal";
@@ -12,6 +14,8 @@ type Props = {
 };
 
 export function RallyTable({ matchId, rallies }: Props) {
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
   const rallyData = rallies.map((r) => ({
     ...r,
     tacticUsed: r.tacticUsed ?? null,
@@ -72,8 +76,8 @@ export function RallyTable({ matchId, rallies }: Props) {
         rally.endScoreSelf != null && rally.endScoreOpponent != null
           ? `${rally.endScoreSelf}:${rally.endScoreOpponent}`
           : rally.startScoreSelf != null && rally.startScoreOpponent != null
-            ? `${rally.startScoreSelf}:${rally.startScoreOpponent}`
-            : "未记录",
+          ? `${rally.startScoreSelf}:${rally.startScoreOpponent}`
+          : "未记录",
       width: 2,
     },
     {
@@ -103,13 +107,13 @@ export function RallyTable({ matchId, rallies }: Props) {
               excludeFromScore: rally.excludeFromScore,
             }}
           />
-          <form action={deleteRally} className="inline-flex" style={{ marginLeft: 4 }}>
-            <input type="hidden" name="matchId" value={matchId} />
-            <input type="hidden" name="rallyId" value={rally.id} />
-            <Button htmlType="submit" type="link" danger size="small">
-              删除
-            </Button>
-          </form>
+          <DeleteRallyButton
+            matchId={matchId}
+            rallyId={rally.id}
+            loading={pendingId === rally.id}
+            onStart={() => setPendingId(rally.id)}
+            onDone={() => setPendingId(null)}
+          />
         </Space>
       ),
     },
@@ -129,3 +133,42 @@ export function RallyTable({ matchId, rallies }: Props) {
   );
 }
 
+function DeleteRallyButton({
+  matchId,
+  rallyId,
+  loading,
+  onStart,
+  onDone,
+}: {
+  matchId: string;
+  rallyId: string;
+  loading: boolean;
+  onStart: () => void;
+  onDone: () => void;
+}) {
+  return (
+    <Popconfirm
+      title="确定删除该回合？"
+      okText="删除"
+      cancelText="取消"
+      onConfirm={async () => {
+        onStart();
+        const formData = new FormData();
+        formData.append("matchId", matchId);
+        formData.append("rallyId", rallyId);
+        await deleteRally(formData);
+        onDone();
+      }}
+    >
+      <Button
+        type="link"
+        danger
+        size="small"
+        loading={loading}
+        style={{ marginLeft: 4 }}
+      >
+        删除
+      </Button>
+    </Popconfirm>
+  );
+}

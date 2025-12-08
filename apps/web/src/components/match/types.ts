@@ -37,3 +37,15 @@ export type Summary = {
   winRate: number;
 };
 
+export type EditableMatch = {
+  id: string;
+  title: string;
+  matchDate: string | null;
+  opponentId: string | null;
+  opponent: string | null;
+  opponentName?: string | null;
+  tournamentId: string | null;
+  tournamentName?: string | null;
+  notes: string | null;
+};
+

@@ -22,11 +22,10 @@ export function Modal({
     <AntdModal
       open={open}
       onCancel={onClose}
-      onOk={onClose}
       title={title ?? "弹窗"}
-      footer={footer}
+      footer={footer ?? null}
       centered
-      width="auto"
+      width={720}
       styles={{
         body: { maxHeight: "70vh", overflowY: "auto" },
       }}

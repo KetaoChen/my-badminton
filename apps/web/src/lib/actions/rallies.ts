@@ -4,7 +4,11 @@ import { db, schema } from "@my-badminton/db/client";
 import { asc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-import { rallyDeleteSchema, rallyFormSchema, rallyUpdateFormSchema } from "./schemas";
+import {
+  rallyDeleteSchema,
+  rallyFormSchema,
+  rallyUpdateFormSchema,
+} from "./schemas";
 
 export async function createRally(formData: FormData): Promise<void> {
   const parsed = rallyFormSchema.safeParse({
@@ -50,14 +54,14 @@ export async function createRally(formData: FormData): Promise<void> {
     data.excludeFromScore || !data.result
       ? prevSelf
       : data.result === "win"
-        ? prevSelf + 1
-        : prevSelf;
+      ? prevSelf + 1
+      : prevSelf;
   const endScoreOpponent =
     data.excludeFromScore || !data.result
       ? prevOpp
       : data.result === "lose"
-        ? prevOpp + 1
-        : prevOpp;
+      ? prevOpp + 1
+      : prevOpp;
   await db.insert(schema.rallies).values({
     matchId: data.matchId,
     sequence,
@@ -128,14 +132,14 @@ export async function updateRally(formData: FormData): Promise<void> {
       r.excludeFromScore || !result
         ? currentSelf
         : result === "win"
-          ? currentSelf + 1
-          : currentSelf;
+        ? currentSelf + 1
+        : currentSelf;
     const endScoreOpponent =
       r.excludeFromScore || !result
         ? currentOpp
         : result === "lose"
-          ? currentOpp + 1
-          : currentOpp;
+        ? currentOpp + 1
+        : currentOpp;
 
     if (!r.excludeFromScore) {
       currentSelf = endScoreSelf;
@@ -178,13 +182,16 @@ export async function deleteRally(formData: FormData): Promise<void> {
 
   const { matchId, rallyId } = parsed.data;
 
+  // 先删除，再重新拉取剩余回合并重排序号/比分
+  await db.delete(schema.rallies).where(eq(schema.rallies.id, rallyId));
+
   const ralliesList = await db
     .select()
     .from(schema.rallies)
     .where(eq(schema.rallies.matchId, matchId))
     .orderBy(asc(schema.rallies.sequence), asc(schema.rallies.createdAt));
 
-  const remaining = ralliesList.filter((r) => r.id !== rallyId);
+  const remaining = ralliesList;
 
   let currentSelf = 0;
   let currentOpp = 0;
@@ -198,14 +205,14 @@ export async function deleteRally(formData: FormData): Promise<void> {
       r.excludeFromScore || !result
         ? currentSelf
         : result === "win"
-          ? currentSelf + 1
-          : currentSelf;
+        ? currentSelf + 1
+        : currentSelf;
     const endScoreOpponent =
       r.excludeFromScore || !result
         ? currentOpp
         : result === "lose"
-          ? currentOpp + 1
-          : currentOpp;
+        ? currentOpp + 1
+        : currentOpp;
 
     if (!r.excludeFromScore) {
       currentSelf = endScoreSelf;
@@ -234,4 +241,3 @@ export async function deleteRally(formData: FormData): Promise<void> {
   revalidatePath(`/matches/${matchId}`);
   revalidatePath("/");
 }
-
