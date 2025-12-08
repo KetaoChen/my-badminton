@@ -26,9 +26,6 @@ export function MatchHeaderActions({ match, opponents, tournaments }: Props) {
       <div className="hidden sm:block">
         <DeleteMatchButton matchId={match.id} />
       </div>
-      <Button>
-        <Link href={`/matches/${match.id}/export`}>导出 CSV</Link>
-      </Button>
       <Button type="link">
         <Link href="/">返回列表</Link>
       </Button>
