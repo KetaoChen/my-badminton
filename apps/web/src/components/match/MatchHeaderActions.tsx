@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { Button, Space } from "antd";
+import { Space } from "antd";
 
 import { updateMatch } from "@/lib/actions";
 import { DeleteMatchButton } from "../DeleteMatchButton";
@@ -26,10 +25,6 @@ export function MatchHeaderActions({ match, opponents, tournaments }: Props) {
       <div className="hidden sm:block">
         <DeleteMatchButton matchId={match.id} />
       </div>
-      <Button type="link">
-        <Link href="/">返回列表</Link>
-      </Button>
     </Space>
   );
 }
-
