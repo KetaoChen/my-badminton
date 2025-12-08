@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Layout, Menu, Space, Typography, theme } from "antd";
+import { Layout, Menu, Space, Typography, theme, Button } from "antd";
+import { signOut } from "next-auth/react";
 import { ReactNode } from "react";
 
 type AppHeaderProps = {
@@ -48,7 +49,12 @@ export function AppHeader({
               style={{ borderBottom: "none", minWidth: 220 }}
             />
           </Space>
-          {extra ? <Space wrap>{extra}</Space> : null}
+          <Space wrap>
+            {extra}
+            <Button onClick={() => signOut({ callbackUrl: "/login" })}>
+              登出
+            </Button>
+          </Space>
         </div>
         {(title || description) && (
           <div className="flex flex-col gap-1">
