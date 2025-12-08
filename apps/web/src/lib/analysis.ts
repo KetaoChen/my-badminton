@@ -92,9 +92,7 @@ export async function getAnalysis(filters: AnalysisFilters) {
     (await db
       .select({
         serve: sql<number>`avg(${schema.rallies.serveScore})`,
-        placement: sql<number>`avg(${schema.rallies.placementScore})`,
-        footwork: sql<number>`avg(${schema.rallies.footworkScore})`,
-        tactic: sql<number>`avg(${schema.rallies.tacticScore})`,
+        tactic: sql<number>`avg(${schema.rallies.tacticUsed}::int)`,
       })
       .from(schema.rallies)
       .innerJoin(schema.matches, eq(schema.matches.id, schema.rallies.matchId))
@@ -316,8 +314,6 @@ export async function getAnalysis(filters: AnalysisFilters) {
     loseReasonSeries,
     abilities: {
       serve: Number(abilities?.serve ?? 0),
-      placement: Number(abilities?.placement ?? 0),
-      footwork: Number(abilities?.footwork ?? 0),
       tactic: Number(abilities?.tactic ?? 0),
     },
     opponentStats: opponentStats.map((o) => ({
@@ -338,8 +334,6 @@ export async function getAnalysis(filters: AnalysisFilters) {
       matchDate: m.matchDate,
       opponentName: m.opponentName ?? "未填写",
       serve: Number(m.serve ?? 0),
-      placement: Number(m.placement ?? 0),
-      footwork: Number(m.footwork ?? 0),
       tactic: Number(m.tactic ?? 0),
     })),
   };
@@ -357,9 +351,7 @@ function abilitySeriesQuery(conditions: Condition[]) {
       matchDate: schema.matches.matchDate,
       opponentName: sql<string>`coalesce(${schema.opponents.name}, ${schema.matches.opponent})`,
       serve: sql<number>`avg(${schema.rallies.serveScore})`,
-      placement: sql<number>`avg(${schema.rallies.placementScore})`,
-      footwork: sql<number>`avg(${schema.rallies.footworkScore})`,
-      tactic: sql<number>`avg(${schema.rallies.tacticScore})`,
+      tactic: sql<number>`avg(${schema.rallies.tacticUsed}::int)`,
     })
     .from(schema.rallies)
     .innerJoin(schema.matches, eq(schema.matches.id, schema.rallies.matchId))

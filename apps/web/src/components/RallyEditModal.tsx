@@ -12,10 +12,8 @@ type Rally = {
   matchId: string;
   result: "win" | "lose";
   pointReason: string | null;
-  tacticScore: number | null;
+  tacticUsed: boolean | null;
   serveScore: number | null;
-  placementScore: number | null;
-  footworkScore: number | null;
   notes: string | null;
   excludeFromScore?: boolean | null;
 };
@@ -73,16 +71,11 @@ export function RallyEditModal({ rally }: Props) {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
               <span className="text-[11px] uppercase tracking-wide text-slate-500">
-                战术得分
+                使用战术
               </span>
-              <InputNumber
-                name="tacticScore"
-                min={0}
-                max={10}
-                className="w-full"
-                defaultValue={rally.tacticScore ?? undefined}
-                placeholder="0-10"
-              />
+              <Checkbox name="tacticUsed" defaultChecked={!!rally.tacticUsed}>
+                是
+              </Checkbox>
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-[11px] uppercase tracking-wide text-slate-500">
@@ -94,35 +87,6 @@ export function RallyEditModal({ rally }: Props) {
                 max={10}
                 className="w-full"
                 defaultValue={rally.serveScore ?? undefined}
-                placeholder="0-10"
-              />
-            </label>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-wide text-slate-500">
-                球到位
-              </span>
-              <InputNumber
-                name="placementScore"
-                min={0}
-                max={10}
-                className="w-full"
-                defaultValue={rally.placementScore ?? undefined}
-                placeholder="0-10"
-              />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-wide text-slate-500">
-                站位/步伐
-              </span>
-              <InputNumber
-                name="footworkScore"
-                min={0}
-                max={10}
-                className="w-full"
-                defaultValue={rally.footworkScore ?? undefined}
                 placeholder="0-10"
               />
             </label>

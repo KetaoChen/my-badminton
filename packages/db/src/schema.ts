@@ -69,10 +69,8 @@ export const rallies = pgTable(
     durationSeconds: integer("duration_seconds"),
     shotPattern: jsonb("shot_pattern").$type<Record<string, unknown> | null>(),
     serveScore: integer("serve_score"),
-    placementScore: integer("placement_score"),
-    footworkScore: integer("footwork_score"),
     notes: text("notes"),
-    tacticScore: integer("tactic_score"),
+    tacticUsed: boolean("tactic_used").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

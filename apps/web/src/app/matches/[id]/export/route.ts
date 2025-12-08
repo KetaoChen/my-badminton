@@ -31,10 +31,8 @@ export const GET = async (
       "StartScoreOpponent",
       "EndScoreSelf",
       "EndScoreOpponent",
-      "TacticScore",
+      "TacticUsed",
       "ServeScore",
-      "PlacementScore",
-      "FootworkScore",
       "Notes",
     ]
       .map((h) => `"${h}"`)
@@ -50,10 +48,8 @@ export const GET = async (
       rally.startScoreOpponent ?? "",
       rally.endScoreSelf ?? "",
       rally.endScoreOpponent ?? "",
-      rally.tacticScore ?? "",
+      rally.tacticUsed ? "true" : "false",
       rally.serveScore ?? "",
-      rally.placementScore ?? "",
-      rally.footworkScore ?? "",
       rally.notes ?? "",
     ].map((value) => `"${String(value).replace(/"/g, '""')}"`);
 

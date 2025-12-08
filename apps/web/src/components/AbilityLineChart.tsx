@@ -17,8 +17,6 @@ type SeriesPoint = {
   title: string;
   opponentName: string;
   serve: number;
-  placement: number;
-  footwork: number;
   tactic: number;
 };
 
@@ -54,9 +52,7 @@ export function AbilityLineChart({ data }: { data: SeriesPoint[] }) {
     labels,
     datasets: [
       toDs("serve", "#0ea5e9", "发球"),
-      toDs("placement", "#22c55e", "球到位"),
-      toDs("footwork", "#f59e0b", "站位&步伐"),
-      toDs("tactic", "#6366f1", "战术"),
+      toDs("tactic", "#6366f1", "战术使用"),
     ],
   };
 

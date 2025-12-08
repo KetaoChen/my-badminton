@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { Button, Input, Select, Space } from "antd";
+import { Button, Input, Select } from "antd";
 import { Modal } from "./Modal";
 
 type Match = {

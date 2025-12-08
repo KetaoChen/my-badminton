@@ -43,10 +43,8 @@ type Rally = {
   sequence: number | null;
   result: "win" | "lose";
   pointReason: string | null;
-  tacticScore: number | null;
+  tacticUsed: boolean | null;
   serveScore: number | null;
-  placementScore: number | null;
-  footworkScore: number | null;
   notes: string | null;
   excludeFromScore?: boolean | null;
   startScoreSelf?: number | null;
@@ -129,12 +127,13 @@ export function MatchDetailContent({
       render: (val: string | null) => val || "未填写",
     },
     {
-      title: "战术得分",
-      dataIndex: "tacticScore",
-      key: "tacticScore",
+      title: "使用战术",
+      dataIndex: "tacticUsed",
+      key: "tacticUsed",
       align: "center" as const,
-      width: 100,
-      render: (val: number | null) => (val ?? "—").toString(),
+      width: 120,
+      render: (val: boolean | null) =>
+        val ? "是" : val === false ? "否" : "—",
     },
     {
       title: "发球到位",
@@ -142,22 +141,6 @@ export function MatchDetailContent({
       key: "serveScore",
       align: "center" as const,
       width: 100,
-      render: (val: number | null) => (val ?? "—").toString(),
-    },
-    {
-      title: "球到位",
-      dataIndex: "placementScore",
-      key: "placementScore",
-      align: "center" as const,
-      width: 100,
-      render: (val: number | null) => (val ?? "—").toString(),
-    },
-    {
-      title: "站位/步伐",
-      dataIndex: "footworkScore",
-      key: "footworkScore",
-      align: "center" as const,
-      width: 110,
       render: (val: number | null) => (val ?? "—").toString(),
     },
     {
@@ -194,10 +177,8 @@ export function MatchDetailContent({
               matchId: match.id,
               result: rally.result,
               pointReason: rally.pointReason,
-              tacticScore: rally.tacticScore,
+              tacticUsed: rally.tacticUsed,
               serveScore: rally.serveScore,
-              placementScore: rally.placementScore,
-              footworkScore: rally.footworkScore,
               notes: rally.notes,
               excludeFromScore: rally.excludeFromScore,
             }}
@@ -220,10 +201,8 @@ export function MatchDetailContent({
 
   const rallyData = rallies.map((r) => ({
     ...r,
-    tacticScore: r.tacticScore ?? null,
+    tacticUsed: r.tacticUsed ?? null,
     serveScore: r.serveScore ?? null,
-    placementScore: r.placementScore ?? null,
-    footworkScore: r.footworkScore ?? null,
   }));
 
   const headerActions = (
@@ -251,7 +230,11 @@ export function MatchDetailContent({
       <AppHeader
         activeKey="home"
         title={displayTitle || match.title}
-        description={`日期：${formatInputDate(match.matchDate) || "未填写"} · 对手：${match.opponentName || "未填写"} · 赛事：${match.tournamentName || "未填写"}`}
+        description={`日期：${
+          formatInputDate(match.matchDate) || "未填写"
+        } · 对手：${match.opponentName || "未填写"} · 赛事：${
+          match.tournamentName || "未填写"
+        }`}
         extra={headerActions}
       />
 
@@ -277,7 +260,10 @@ export function MatchDetailContent({
                 </Col>
               </Row>
               <Card size="small" className="mt-3">
-                <Statistic title="赢球率" value={`${summary.winRate.toFixed(1)}%`} />
+                <Statistic
+                  title="赢球率"
+                  value={`${summary.winRate.toFixed(1)}%`}
+                />
               </Card>
             </Card>
 
@@ -289,10 +275,16 @@ export function MatchDetailContent({
                   </Typography.Text>
                   <Space direction="vertical" className="mt-2 w-full">
                     {winReasons.length === 0 ? (
-                      <Typography.Text type="secondary">暂无得分记录。</Typography.Text>
+                      <Typography.Text type="secondary">
+                        暂无得分记录。
+                      </Typography.Text>
                     ) : (
                       winReasons.map(([reason, counts]) => (
-                        <Card key={reason} size="small" className="bg-emerald-50 border-emerald-100">
+                        <Card
+                          key={reason}
+                          size="small"
+                          className="bg-emerald-50 border-emerald-100"
+                        >
                           <Flex align="center" justify="space-between">
                             <Typography.Text strong>{reason}</Typography.Text>
                             <Tag color="green">+{counts.wins}</Tag>
@@ -308,10 +300,16 @@ export function MatchDetailContent({
                   </Typography.Text>
                   <Space direction="vertical" className="mt-2 w-full">
                     {loseReasons.length === 0 ? (
-                      <Typography.Text type="secondary">暂无失分记录。</Typography.Text>
+                      <Typography.Text type="secondary">
+                        暂无失分记录。
+                      </Typography.Text>
                     ) : (
                       loseReasons.map(([reason, counts]) => (
-                        <Card key={reason} size="small" className="bg-rose-50 border-rose-100">
+                        <Card
+                          key={reason}
+                          size="small"
+                          className="bg-rose-50 border-rose-100"
+                        >
                           <Flex align="center" justify="space-between">
                             <Typography.Text strong>{reason}</Typography.Text>
                             <Tag color="red">-{counts.losses}</Tag>
@@ -341,54 +339,28 @@ export function MatchDetailContent({
                 defaultReason="对手失误"
               />
 
-              <Form.Item name="excludeFromScore" valuePropName="checked" className="!mb-3">
-                <Checkbox>不计入比分</Checkbox>
+              <Form.Item
+                name="excludeFromScore"
+                valuePropName="checked"
+                className="!mb-3"
+              >
+                <Checkbox name="excludeFromScore">不计入比分</Checkbox>
               </Form.Item>
 
               <Row gutter={12}>
                 <Col span={12}>
-                  <Form.Item label="战术执行得分" className="!mb-3">
-                    <InputNumber
-                      name="tacticScore"
-                      min={0}
-                      max={10}
-                      className="w-full"
-                      placeholder="0-10"
-                      controls={false}
-                    />
+                  <Form.Item
+                    name="tacticUsed"
+                    valuePropName="checked"
+                    className="!mb-3"
+                  >
+                    <Checkbox name="tacticUsed">使用战术</Checkbox>
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item label="发球到位得分" className="!mb-3">
                     <InputNumber
                       name="serveScore"
-                      min={0}
-                      max={10}
-                      className="w-full"
-                      placeholder="0-10"
-                      controls={false}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-
-              <Row gutter={12}>
-                <Col span={12}>
-                  <Form.Item label="球到位打分" className="!mb-3">
-                    <InputNumber
-                      name="placementScore"
-                      min={0}
-                      max={10}
-                      className="w-full"
-                      placeholder="0-10"
-                      controls={false}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="站位/步伐打分" className="!mb-3">
-                    <InputNumber
-                      name="footworkScore"
                       min={0}
                       max={10}
                       className="w-full"
@@ -408,7 +380,12 @@ export function MatchDetailContent({
               </Form.Item>
 
               <Form.Item className="!mb-0">
-                <Button type="primary" htmlType="submit" block style={{ paddingInline: 16 }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  block
+                  style={{ paddingInline: 16 }}
+                >
                   保存回合
                 </Button>
               </Form.Item>
@@ -432,4 +409,3 @@ export function MatchDetailContent({
     </div>
   );
 }
-

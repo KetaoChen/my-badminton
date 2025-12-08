@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Button,
@@ -35,6 +34,13 @@ type Analysis = Awaited<ReturnType<typeof import("@/lib/analysis").getAnalysis>>
 
 type Option = { id: string; name: string };
 
+type FilterFormValues = {
+  opponentId?: string;
+  tournamentId?: string;
+  tournamentOnly?: boolean;
+  dateRange?: [dayjs.Dayjs, dayjs.Dayjs];
+};
+
 type Props = {
   filters: Filters;
   opponents: Option[];
@@ -63,7 +69,7 @@ export function AnalysisContent({
     [filters],
   );
 
-  const onFinish = (values: any) => {
+  const onFinish = (values: FilterFormValues) => {
     const params = new URLSearchParams();
     if (values.opponentId) params.set("opponentId", values.opponentId);
     if (values.tournamentId) params.set("tournamentId", values.tournamentId);
@@ -210,8 +216,6 @@ export function AnalysisContent({
             <Card title="能力平均分" className="shadow-sm">
               <Space direction="vertical" className="w-full">
                 <ScoreBar label="发球" value={analysis.abilities.serve} />
-                <ScoreBar label="球到位" value={analysis.abilities.placement} />
-                <ScoreBar label="站位&步伐" value={analysis.abilities.footwork} />
                 <ScoreBar label="战术" value={analysis.abilities.tactic} />
               </Space>
             </Card>

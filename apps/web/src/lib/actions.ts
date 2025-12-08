@@ -58,22 +58,12 @@ const rallyFormSchema = z.object({
   result: z.enum(["win", "lose"]),
   pointReason: z.enum(rallyPointReasons),
   excludeFromScore: checkboxBoolean,
+  tacticUsed: checkboxBoolean,
   serveScore: z
     .string()
     .trim()
     .optional()
     .transform((v) => (v ? Number(v) : null)),
-  placementScore: z
-    .string()
-    .trim()
-    .optional()
-    .transform((v) => (v ? Number(v) : null)),
-  footworkScore: z
-    .string()
-    .trim()
-    .optional()
-    .transform((v) => (v ? Number(v) : null)),
-  tacticScore: z.string().trim().optional(),
   notes: z.string().trim().optional(),
 });
 
@@ -354,10 +344,8 @@ export async function createRally(formData: FormData): Promise<void> {
     result: formData.get("result"),
     pointReason: formData.get("pointReason"),
     excludeFromScore: formData.get("excludeFromScore"),
+    tacticUsed: formData.get("tacticUsed"),
     serveScore: formData.get("serveScore"),
-    placementScore: formData.get("placementScore"),
-    footworkScore: formData.get("footworkScore"),
-    tacticScore: formData.get("tacticScore"),
     notes: formData.get("notes"),
   });
 
@@ -402,8 +390,6 @@ export async function createRally(formData: FormData): Promise<void> {
       : data.result === "lose"
       ? prevOpp + 1
       : prevOpp;
-  const tacticScore = data.tacticScore ? Number(data.tacticScore) : null;
-
   await db.insert(schema.rallies).values({
     matchId: data.matchId,
     sequence,
@@ -411,14 +397,12 @@ export async function createRally(formData: FormData): Promise<void> {
     excludeFromScore: !!data.excludeFromScore,
     pointFor: data.result === "win" ? "self" : "opponent",
     pointReason: data.pointReason || null,
+    tacticUsed: !!data.tacticUsed,
     startScoreSelf,
     startScoreOpponent,
     endScoreSelf,
     endScoreOpponent,
     serveScore: data.serveScore ?? null,
-    placementScore: data.placementScore ?? null,
-    footworkScore: data.footworkScore ?? null,
-    tacticScore,
     notes: data.notes || null,
   });
 
@@ -432,10 +416,8 @@ export async function updateRally(formData: FormData): Promise<void> {
     result: formData.get("result"),
     pointReason: formData.get("pointReason"),
     excludeFromScore: formData.get("excludeFromScore"),
+    tacticUsed: formData.get("tacticUsed"),
     serveScore: formData.get("serveScore"),
-    placementScore: formData.get("placementScore"),
-    footworkScore: formData.get("footworkScore"),
-    tacticScore: formData.get("tacticScore"),
     notes: formData.get("notes"),
   });
 
@@ -458,10 +440,8 @@ export async function updateRally(formData: FormData): Promise<void> {
           result: data.result,
           pointReason: data.pointReason,
           excludeFromScore: !!data.excludeFromScore,
+          tacticUsed: !!data.tacticUsed,
           serveScore: data.serveScore ?? null,
-          placementScore: data.placementScore ?? null,
-          footworkScore: data.footworkScore ?? null,
-          tacticScore: data.tacticScore ? Number(data.tacticScore) : null,
           notes: data.notes || null,
         }
       : r
@@ -502,14 +482,12 @@ export async function updateRally(formData: FormData): Promise<void> {
         excludeFromScore: !!r.excludeFromScore,
         pointFor: result === "win" ? "self" : "opponent",
         pointReason: r.pointReason || null,
+        tacticUsed: !!r.tacticUsed,
         startScoreSelf,
         startScoreOpponent,
         endScoreSelf,
         endScoreOpponent,
         serveScore: r.serveScore ?? null,
-        placementScore: r.placementScore ?? null,
-        footworkScore: r.footworkScore ?? null,
-        tacticScore: r.tacticScore ?? null,
         notes: r.notes || null,
       })
       .where(eq(schema.rallies.id, r.id));
@@ -578,9 +556,7 @@ export async function deleteRally(formData: FormData): Promise<void> {
         endScoreSelf,
         endScoreOpponent,
         serveScore: r.serveScore ?? null,
-        placementScore: r.placementScore ?? null,
-        footworkScore: r.footworkScore ?? null,
-        tacticScore: r.tacticScore ?? null,
+        tacticUsed: !!r.tacticUsed,
         excludeFromScore: !!r.excludeFromScore,
         notes: r.notes || null,
       })
