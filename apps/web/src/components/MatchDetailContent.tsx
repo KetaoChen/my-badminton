@@ -105,7 +105,7 @@ export function MatchDetailContent({
       key: "sequence",
       align: "center" as const,
       render: (val: number | null) => val ?? "—",
-      width: 80,
+      width: 2,
     },
     {
       title: "结果",
@@ -117,7 +117,7 @@ export function MatchDetailContent({
           {val === "win" ? "得分" : "失分"}
         </Tag>
       ),
-      width: 90,
+      width: 2,
     },
     {
       title: "得失分原因",
@@ -125,13 +125,14 @@ export function MatchDetailContent({
       key: "pointReason",
       align: "center" as const,
       render: (val: string | null) => val || "未填写",
+      width: 3,
     },
     {
       title: "使用战术",
       dataIndex: "tacticUsed",
       key: "tacticUsed",
       align: "center" as const,
-      width: 120,
+      width: 3,
       render: (val: boolean | null) =>
         val ? "是" : val === false ? "否" : "—",
     },
@@ -140,7 +141,7 @@ export function MatchDetailContent({
       dataIndex: "serveScore",
       key: "serveScore",
       align: "center" as const,
-      width: 100,
+      width: 3,
       render: (val: number | null) => (val ?? "—").toString(),
     },
     {
@@ -148,27 +149,26 @@ export function MatchDetailContent({
       key: "score",
       align: "center" as const,
       render: (_: unknown, rally: Rally) =>
-        rally.startScoreSelf != null &&
-        rally.startScoreOpponent != null &&
-        rally.endScoreSelf != null &&
-        rally.endScoreOpponent != null
-          ? `${rally.startScoreSelf}:${rally.startScoreOpponent} → ${rally.endScoreSelf}:${rally.endScoreOpponent}`
+        rally.endScoreSelf != null && rally.endScoreOpponent != null
+          ? `${rally.endScoreSelf}:${rally.endScoreOpponent}`
+          : rally.startScoreSelf != null && rally.startScoreOpponent != null
+          ? `${rally.startScoreSelf}:${rally.startScoreOpponent}`
           : "未记录",
-      width: 180,
+      width: 2,
     },
     {
       title: "备注",
       dataIndex: "notes",
       key: "notes",
       align: "center" as const,
-      render: (val: string | null) => val || "—",
-      ellipsis: true,
+      width: 12,
+      render: (val: string | null) => <div>{val || "—"}</div>,
     },
     {
       title: "操作",
       key: "actions",
-      fixed: "right" as const,
-      width: 140,
+      align: "center" as const,
+      width: 3,
       render: (_: unknown, rally: Rally) => (
         <Space size={8}>
           <RallyEditModal
@@ -393,13 +393,13 @@ export function MatchDetailContent({
           </Card>
         </section>
 
-        <Card title="回合列表" className="shadow-sm">
+        <Card title="回合列表" className="shadow-md">
           <Table
             dataSource={rallyData}
             columns={columns}
             rowKey="id"
             pagination={false}
-            scroll={{ x: 1100 }}
+            scroll={{ x: 1000 }}
             tableLayout="fixed"
             size="middle"
             locale={{ emptyText: <Empty description="暂无回合记录" /> }}
