@@ -236,6 +236,7 @@ export default async function MatchDetailPage({ params }: PageProps) {
             <form action={createRally} className="mt-4 space-y-4">
               <input type="hidden" name="matchId" value={data.match.id} />
               <ResultReasonFields
+                key={`create-${data.rallies.length}`}
                 defaultResult="win"
                 defaultReason="对手失误"
               />
@@ -398,7 +399,7 @@ export default async function MatchDetailPage({ params }: PageProps) {
                           ? `${rally.startScoreSelf}:${rally.startScoreOpponent} → ${rally.endScoreSelf}:${rally.endScoreOpponent}`
                           : "未记录"}
                       </td>
-                      <td className="max-w-[300px] px-3 py-2 text-slate-600 break-words">
+                      <td className="max-w-[270px] px-3 py-2 text-slate-600 break-words">
                         {rally.notes || "—"}
                       </td>
                       <td className="px-3 py-2 text-right align-top">

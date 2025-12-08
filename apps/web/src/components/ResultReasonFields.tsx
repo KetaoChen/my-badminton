@@ -46,6 +46,13 @@ export function ResultReasonFields({
   });
 
   const reasons = useMemo(() => reasonsFor(result), [result]);
+  const safeReason = useMemo(() => {
+    if (reasons.includes(reason as never)) return reason;
+    if (defaultReason && reasons.includes(defaultReason as never)) {
+      return defaultReason;
+    }
+    return reasons[0];
+  }, [reason, defaultReason, reasons]);
 
   return (
     <div className="space-y-2">
@@ -75,7 +82,7 @@ export function ResultReasonFields({
         </label>
         <select
           name={reasonName}
-          value={reason}
+          value={safeReason}
           onChange={(e) => {
             const next = e.target.value;
             const allowed = reasonsFor(result);
