@@ -1,42 +1,40 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { Button, Card, Form, Input, Alert } from "antd";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Alert, Button, Card, Form, Input } from "antd";
 
-export default function LoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
-  );
+export default function RegisterPage() {
+  return <RegisterForm />;
 }
 
-function LoginForm() {
-  const params = useSearchParams();
-  const callbackUrl = params.get("callbackUrl") || "/";
+function RegisterForm() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const onFinish = async (values: { username: string; password: string }) => {
     setError(null);
     setLoading(true);
-    const res = await signIn("credentials", {
-      redirect: true,
-      callbackUrl,
-      username: values.username,
-      password: values.password,
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
     });
-    if (res?.error) {
-      setLoading(false);
-      setError("用户名或密码错误");
+    setLoading(false);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data?.error || "注册失败，请重试");
+      return;
     }
+
+    router.push("/login");
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <Card title="登录" className="w-full max-w-md shadow-sm">
+      <Card title="注册" className="w-full max-w-md shadow-sm">
         <Form
           layout="vertical"
           onFinish={onFinish}
@@ -59,10 +57,10 @@ function LoginForm() {
           </Form.Item>
           {error ? <Alert type="error" message={error} /> : null}
           <div className="flex gap-2">
-            <Button type="primary" htmlType="submit" block loading={loading}>
-              登录
+            <Button onClick={() => router.push("/login")} block>
+              返回登录
             </Button>
-            <Button type="default" block href="/register">
+            <Button type="primary" htmlType="submit" block loading={loading}>
               注册
             </Button>
           </div>
