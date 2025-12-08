@@ -4,6 +4,7 @@ import { db, schema } from "@my-badminton/db/client";
 import { asc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+import { requireAuth } from "@/lib/auth";
 import {
   rallyDeleteSchema,
   rallyFormSchema,
@@ -11,6 +12,7 @@ import {
 } from "./schemas";
 
 export async function createRally(formData: FormData): Promise<void> {
+  const userId = await requireAuth();
   const parsed = rallyFormSchema.safeParse({
     matchId: formData.get("matchId"),
     result: formData.get("result"),
@@ -27,6 +29,15 @@ export async function createRally(formData: FormData): Promise<void> {
   }
 
   const data = parsed.data;
+  const [matchOwner] =
+    (await db
+      .select({ userId: schema.matches.userId })
+      .from(schema.matches)
+      .where(eq(schema.matches.id, data.matchId))
+      .limit(1)) ?? [];
+  if (!matchOwner || matchOwner.userId !== userId) {
+    throw new Error("Unauthorized");
+  }
 
   const [current] = await db
     .select({
@@ -82,6 +93,7 @@ export async function createRally(formData: FormData): Promise<void> {
 }
 
 export async function updateRally(formData: FormData): Promise<void> {
+  const userId = await requireAuth();
   const parsed = rallyUpdateFormSchema.safeParse({
     rallyId: formData.get("rallyId"),
     matchId: formData.get("matchId"),
@@ -99,6 +111,15 @@ export async function updateRally(formData: FormData): Promise<void> {
   }
 
   const data = parsed.data;
+  const [matchOwner] =
+    (await db
+      .select({ userId: schema.matches.userId })
+      .from(schema.matches)
+      .where(eq(schema.matches.id, data.matchId))
+      .limit(1)) ?? [];
+  if (!matchOwner || matchOwner.userId !== userId) {
+    throw new Error("Unauthorized");
+  }
   const ralliesList = await db
     .select()
     .from(schema.rallies)
@@ -170,6 +191,7 @@ export async function updateRally(formData: FormData): Promise<void> {
 }
 
 export async function deleteRally(formData: FormData): Promise<void> {
+  const userId = await requireAuth();
   const parsed = rallyDeleteSchema.safeParse({
     matchId: formData.get("matchId"),
     rallyId: formData.get("rallyId"),
@@ -181,6 +203,15 @@ export async function deleteRally(formData: FormData): Promise<void> {
   }
 
   const { matchId, rallyId } = parsed.data;
+  const [matchOwner] =
+    (await db
+      .select({ userId: schema.matches.userId })
+      .from(schema.matches)
+      .where(eq(schema.matches.id, matchId))
+      .limit(1)) ?? [];
+  if (!matchOwner || matchOwner.userId !== userId) {
+    throw new Error("Unauthorized");
+  }
 
   // 先删除，再重新拉取剩余回合并重排序号/比分
   await db.delete(schema.rallies).where(eq(schema.rallies.id, rallyId));

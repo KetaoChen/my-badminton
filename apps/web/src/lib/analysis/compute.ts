@@ -1,6 +1,7 @@
 import { db, schema } from "@my-badminton/db/client";
 import { and, desc, eq, sql } from "drizzle-orm";
 
+import { requireAuth } from "@/lib/auth";
 import { abilitySeriesQuery } from "./series";
 
 type Condition = Parameters<typeof and>[number];
@@ -14,7 +15,9 @@ export type AnalysisFilters = {
 };
 
 export async function getAnalysis(filters: AnalysisFilters) {
+  const userId = await requireAuth();
   const conditions: Condition[] = [];
+  conditions.push(eq(schema.matches.userId, userId));
   if (filters.tournamentId) {
     conditions.push(eq(schema.matches.tournamentId, filters.tournamentId));
   }

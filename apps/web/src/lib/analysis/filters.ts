@@ -1,7 +1,10 @@
 import { db, schema } from "@my-badminton/db/client";
-import { desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
+
+import { requireAuth } from "@/lib/auth";
 
 export async function getAnalysisFilters() {
+  const userId = await requireAuth();
   const opponents = await db
     .select({
       id: schema.opponents.id,
@@ -9,9 +12,12 @@ export async function getAnalysisFilters() {
     })
     .from(schema.opponents)
     .where(
-      or(
-        eq(schema.opponents.training, true),
-        eq(schema.opponents.notes, "训练对手")
+      and(
+        or(
+          eq(schema.opponents.training, true),
+          eq(schema.opponents.notes, "训练对手")
+        ),
+        eq(schema.opponents.userId, userId)
       )
     )
     .orderBy(desc(schema.opponents.createdAt));
@@ -22,6 +28,7 @@ export async function getAnalysisFilters() {
       name: schema.tournaments.name,
     })
     .from(schema.tournaments)
+    .where(eq(schema.tournaments.userId, userId))
     .orderBy(desc(schema.tournaments.createdAt))
     .limit(50);
 

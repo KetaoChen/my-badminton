@@ -8,16 +8,16 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "env": ["NEON_DATABASE_URL", "DATABASE_URL_UNPOOLED"],
-      "outputs": [
-        ".next/**",
-        "dist/**",
-        "build/**"
-      ]
+      "env": [
+        "NEON_DATABASE_URL",
+        "DATABASE_URL_UNPOOLED",
+        "NEXTAUTH_URL",
+        "NEXTAUTH_SECRET"
+      ],
+      "outputs": [".next/**", "dist/**", "build/**"]
     },
     "lint": {
       "dependsOn": ["^lint"]
     }
   }
 }
-

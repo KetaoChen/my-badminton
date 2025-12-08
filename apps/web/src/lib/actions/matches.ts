@@ -1,13 +1,15 @@
 "use server";
 
 import { db, schema } from "@my-badminton/db/client";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { requireAuth } from "@/lib/auth";
 import { matchFormSchema } from "./schemas";
 
 export async function listMatches() {
+  const userId = await requireAuth();
   const rows = await db
     .select({
       match: schema.matches,
@@ -15,6 +17,7 @@ export async function listMatches() {
       tournament: schema.tournaments,
     })
     .from(schema.matches)
+    .where(eq(schema.matches.userId, userId))
     .leftJoin(
       schema.opponents,
       eq(schema.opponents.id, schema.matches.opponentId)
@@ -64,6 +67,7 @@ export async function listMatches() {
 }
 
 export async function getMatchWithRallies(matchId: string) {
+  const userId = await requireAuth();
   const [row] = await db
     .select({
       match: schema.matches,
@@ -79,7 +83,9 @@ export async function getMatchWithRallies(matchId: string) {
       schema.tournaments,
       eq(schema.tournaments.id, schema.matches.tournamentId)
     )
-    .where(eq(schema.matches.id, matchId));
+    .where(
+      and(eq(schema.matches.id, matchId), eq(schema.matches.userId, userId))
+    );
 
   if (!row) {
     return null;
@@ -101,6 +107,7 @@ export async function getMatchWithRallies(matchId: string) {
 }
 
 export async function createMatch(formData: FormData): Promise<void> {
+  const userId = await requireAuth();
   const parsed = matchFormSchema.safeParse({
     title: formData.get("title"),
     matchDate: formData.get("matchDate"),
@@ -138,6 +145,7 @@ export async function createMatch(formData: FormData): Promise<void> {
         name: opponent,
         notes: trainingOpponent ? "训练对手" : null,
         training: !!trainingOpponent,
+        userId,
       })
       .returning({ id: schema.opponents.id });
     finalOpponentId = inserted?.id ?? null;
@@ -148,6 +156,7 @@ export async function createMatch(formData: FormData): Promise<void> {
       .insert(schema.tournaments)
       .values({
         name: tournamentName || "未命名赛事",
+        userId,
       })
       .returning({ id: schema.tournaments.id });
     finalTournamentId = insertedTournament?.id ?? null;
@@ -160,13 +169,17 @@ export async function createMatch(formData: FormData): Promise<void> {
     tournamentId: finalTournamentId,
     notes: notes || null,
     matchDate: matchDate || null,
+    userId,
   });
 
   revalidatePath("/");
 }
 
 export async function deleteMatch(matchId: string): Promise<void> {
-  await db.delete(schema.matches).where(eq(schema.matches.id, matchId));
+  const userId = await requireAuth();
+  await db
+    .delete(schema.matches)
+    .where(and(eq(schema.matches.id, matchId), eq(schema.matches.userId, userId)));
   revalidatePath("/");
   redirect("/");
 }
@@ -175,6 +188,7 @@ export async function updateMatch(
   matchId: string,
   formData: FormData
 ): Promise<void> {
+  const userId = await requireAuth();
   const parsed = matchFormSchema.safeParse({
     title: formData.get("title"),
     matchDate: formData.get("matchDate"),
@@ -207,6 +221,7 @@ export async function updateMatch(
       .insert(schema.tournaments)
       .values({
         name: tournamentName || "未命名赛事",
+        userId,
       })
       .returning({ id: schema.tournaments.id });
     finalTournamentId = insertedTournament?.id ?? null;
@@ -222,7 +237,9 @@ export async function updateMatch(
       notes: notes || null,
       matchDate: matchDate || null,
     })
-    .where(eq(schema.matches.id, matchId));
+    .where(
+      and(eq(schema.matches.id, matchId), eq(schema.matches.userId, userId))
+    );
 
   revalidatePath(`/matches/${matchId}`);
   revalidatePath("/");

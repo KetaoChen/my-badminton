@@ -14,41 +14,77 @@ import {
 export const rallyResult = pgEnum("rally_result", ["win", "lose"]);
 export const pointFor = pgEnum("point_for", ["self", "opponent"]);
 
-export const opponents = pgTable("opponents", {
+export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  training: boolean("training").notNull().default(false),
-  notes: text("notes"),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
 
-export const tournaments = pgTable("tournaments", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const opponents = pgTable(
+  "opponents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    training: boolean("training").notNull().default(false),
+    notes: text("notes"),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("opponents_user_id_idx").on(table.userId),
+  })
+);
 
-export const matches = pgTable("matches", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  title: text("title").notNull(),
-  matchDate: date("match_date"),
-  opponent: text("opponent"),
-  opponentId: uuid("opponent_id").references(() => opponents.id, {
-    onDelete: "set null",
-  }),
-  tournamentId: uuid("tournament_id").references(() => tournaments.id, {
-    onDelete: "set null",
-  }),
-  notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const tournaments = pgTable(
+  "tournaments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    notes: text("notes"),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("tournaments_user_id_idx").on(table.userId),
+  })
+);
+
+export const matches = pgTable(
+  "matches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull(),
+    matchDate: date("match_date"),
+    opponent: text("opponent"),
+    opponentId: uuid("opponent_id").references(() => opponents.id, {
+      onDelete: "set null",
+    }),
+    tournamentId: uuid("tournament_id").references(() => tournaments.id, {
+      onDelete: "set null",
+    }),
+    notes: text("notes"),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("matches_user_id_idx").on(table.userId),
+  })
+);
 
 export const rallies = pgTable(
   "rallies",
