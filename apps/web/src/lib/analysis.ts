@@ -186,45 +186,43 @@ export async function getAnalysis(filters: AnalysisFilters) {
     loseTotalMap.set(row.matchId, Number(row.total ?? 0));
   }
 
-  const winShareMap = new Map<string, { sumShare: number; matches: number }>();
+  const totalWinPoints =
+    winTotalsByMatch.reduce((acc, row) => acc + Number(row.total ?? 0), 0) || 0;
+  const totalLosePoints =
+    loseTotalsByMatch.reduce((acc, row) => acc + Number(row.total ?? 0), 0) ||
+    0;
+
+  const winReasonTotals = new Map<string, number>();
   for (const row of winByMatchReason) {
-    const total = winTotalMap.get(row.matchId) ?? 0;
-    if (total === 0) continue;
-    const share = Number(row.count ?? 0) / total;
     const key = row.reason ?? "未填写";
-    const prev = winShareMap.get(key) ?? { sumShare: 0, matches: 0 };
-    winShareMap.set(key, {
-      sumShare: prev.sumShare + share,
-      matches: prev.matches + 1,
-    });
+    winReasonTotals.set(
+      key,
+      (winReasonTotals.get(key) ?? 0) + Number(row.count ?? 0)
+    );
   }
 
-  const loseShareMap = new Map<string, { sumShare: number; matches: number }>();
+  const loseReasonTotals = new Map<string, number>();
   for (const row of loseByMatchReason) {
-    const total = loseTotalMap.get(row.matchId) ?? 0;
-    if (total === 0) continue;
-    const share = Number(row.count ?? 0) / total;
     const key = row.reason ?? "未填写";
-    const prev = loseShareMap.get(key) ?? { sumShare: 0, matches: 0 };
-    loseShareMap.set(key, {
-      sumShare: prev.sumShare + share,
-      matches: prev.matches + 1,
-    });
+    loseReasonTotals.set(
+      key,
+      (loseReasonTotals.get(key) ?? 0) + Number(row.count ?? 0)
+    );
   }
 
-  const winReasonShares = Array.from(winShareMap.entries()).map(
-    ([reason, { sumShare, matches }]) => ({
+  const winReasonShares = Array.from(winReasonTotals.entries()).map(
+    ([reason, count]) => ({
       reason,
-      avgShare: matches === 0 ? 0 : sumShare / matches,
-      matches,
+      avgShare: totalWinPoints === 0 ? 0 : count / totalWinPoints,
+      matches: winTotalsByMatch.length,
     })
   );
 
-  const loseReasonShares = Array.from(loseShareMap.entries()).map(
-    ([reason, { sumShare, matches }]) => ({
+  const loseReasonShares = Array.from(loseReasonTotals.entries()).map(
+    ([reason, count]) => ({
       reason,
-      avgShare: matches === 0 ? 0 : sumShare / matches,
-      matches,
+      avgShare: totalLosePoints === 0 ? 0 : count / totalLosePoints,
+      matches: loseTotalsByMatch.length,
     })
   );
 
@@ -264,11 +262,14 @@ export async function getAnalysis(filters: AnalysisFilters) {
     loseShareByMatchReason.set(row.matchId, map);
   }
 
+  const labelForMatch = (m: { matchDate: string | null; title: string }) =>
+    `${m.matchDate ?? "无日期"} · ${m.title}`;
+
   const winReasonSeries = topWinReasons.map((r, idx) => ({
     label: r.reason,
     color: reasonColors[idx % reasonColors.length],
     points: abilitySeries.map((m) => ({
-      label: m.matchDate ?? m.title,
+      label: labelForMatch(m),
       value: winShareByMatchReason.get(m.id)?.get(r.reason) ?? 0,
     })),
   }));
@@ -277,7 +278,7 @@ export async function getAnalysis(filters: AnalysisFilters) {
     label: r.reason,
     color: reasonColors[idx % reasonColors.length],
     points: abilitySeries.map((m) => ({
-      label: m.matchDate ?? m.title,
+      label: labelForMatch(m),
       value: loseShareByMatchReason.get(m.id)?.get(r.reason) ?? 0,
     })),
   }));
@@ -368,6 +369,8 @@ function abilitySeriesQuery(conditions: Condition[]) {
       schema.opponents.name,
       schema.matches.opponent
     )
-    .orderBy(desc(schema.matches.matchDate ?? schema.matches.createdAt))
-    .limit(12);
+    .orderBy(
+      sql`coalesce(${schema.matches.matchDate}, ${schema.matches.createdAt}) asc`
+    )
+    .limit(200);
 }

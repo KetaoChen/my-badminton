@@ -30,11 +30,11 @@ ChartJS.register(
 
 export function ReasonShareLineChart({ series }: { series: Series[] }) {
   if (series.length === 0) return null;
-  const labels = series[0].points.map((p) => p.label).reverse();
+  const labels = series[0].points.map((p) => p.label);
 
   const datasets = series.map((s) => ({
     label: s.label,
-    data: [...s.points].reverse().map((p) => p.value * 100),
+    data: s.points.map((p) => p.value * 100),
     borderColor: s.color,
     backgroundColor: s.color,
     tension: 0.25,
