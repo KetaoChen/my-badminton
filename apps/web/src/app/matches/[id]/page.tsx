@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import {
   createRally,
-  deleteMatch,
   deleteRally,
   getMatchWithRallies,
   listOpponents,
@@ -12,6 +11,7 @@ import {
 import { MatchEditModal } from "@/components/MatchEditModal";
 import { ResultReasonFields } from "@/components/ResultReasonFields";
 import { RallyEditModal } from "@/components/RallyEditModal";
+import { DeleteMatchButton } from "@/components/DeleteMatchButton";
 import { summarizeMatch } from "@/lib/stats";
 
 type PageProps = {
@@ -94,17 +94,9 @@ export default async function MatchDetailPage({ params }: PageProps) {
               tournaments={tournaments}
               action={updateMatch.bind(null, data.match.id)}
             />
-            <form
-              action={deleteMatch.bind(null, data.match.id)}
-              className="hidden sm:block"
-            >
-              <button
-                type="submit"
-                className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600"
-              >
-                删除比赛
-              </button>
-            </form>
+            <div className="hidden sm:block">
+              <DeleteMatchButton matchId={data.match.id} />
+            </div>
             <Link
               href={`/matches/${data.match.id}/export`}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
