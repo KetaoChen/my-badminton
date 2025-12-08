@@ -45,7 +45,7 @@ export function ResultReasonFields({
 
   const reasons = useMemo(
     () => (result === "win" ? winReasons : loseReasons),
-    [result],
+    [result]
   );
   const safeReason = useMemo(() => {
     if (reasons.includes(reason as never)) return reason;
@@ -64,7 +64,7 @@ export function ResultReasonFields({
           setResult(nextResult);
           const nextReasons = nextResult === "win" ? winReasons : loseReasons;
           setReason((prev) =>
-            nextReasons.includes(prev as never) ? prev : nextReasons[0],
+            nextReasons.includes(prev as never) ? prev : nextReasons[0]
           );
         }}
         options={[
@@ -76,21 +76,22 @@ export function ResultReasonFields({
       />
       <input type="hidden" name={resultName} value={result} />
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-slate-700">
           {result === "win" ? "得分原因" : "失分原因"}
         </span>
         <Radio.Group
           onChange={(e) => setReason(e.target.value)}
           value={safeReason}
+          className="w-full"
         >
-          <Space direction="vertical">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2">
             {reasons.map((r) => (
               <Radio key={r} value={r}>
                 {r}
               </Radio>
             ))}
-          </Space>
+          </div>
         </Radio.Group>
         <input type="hidden" name={reasonName} value={safeReason} />
       </div>

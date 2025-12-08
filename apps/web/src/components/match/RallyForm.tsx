@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-import { Button, Checkbox, Col, Form, Input, InputNumber, Row } from "antd";
+import { Button, Checkbox, Form, Input, InputNumber } from "antd";
 
 import { createRally } from "@/lib/actions";
 import { ResultReasonFields } from "../ResultReasonFields";
@@ -46,34 +46,40 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
         defaultReason={defaultReason}
       />
 
-      <Form.Item name="excludeFromScore" valuePropName="checked" className="!mb-3">
+      <Form.Item className="!mb-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-slate-700">发球到位程度</span>
+          <InputNumber
+            name="serveScore"
+            min={0}
+            max={10}
+            className="w-28"
+            placeholder="0-10"
+            controls={false}
+            disabled={pending}
+          />
+        </div>
+      </Form.Item>
+
+      <Form.Item
+        name="excludeFromScore"
+        valuePropName="checked"
+        className="!mb-3"
+      >
         <Checkbox name="excludeFromScore" disabled={pending}>
           不计入比分
         </Checkbox>
       </Form.Item>
 
-      <Row gutter={12}>
-        <Col span={12}>
-          <Form.Item name="tacticUsed" valuePropName="checked" className="!mb-3">
-            <Checkbox name="tacticUsed" disabled={pending}>
-              使用战术
-            </Checkbox>
-          </Form.Item>
-        </Col>
-        <Col span={12}>
-          <Form.Item label="发球到位得分" className="!mb-3">
-            <InputNumber
-              name="serveScore"
-              min={0}
-              max={10}
-              className="w-full"
-              placeholder="0-10"
-              controls={false}
-              disabled={pending}
-            />
-          </Form.Item>
-        </Col>
-      </Row>
+      <div className="h-px w-full bg-slate-200" />
+
+      <Form.Item name="tacticUsed" valuePropName="checked" className="!mb-3">
+        <Checkbox name="tacticUsed" disabled={pending}>
+          使用战术
+        </Checkbox>
+      </Form.Item>
+
+      <div className="h-px w-full bg-slate-200" />
 
       <Form.Item label="备注" className="!mb-3">
         <Input.TextArea
@@ -105,4 +111,3 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
     </Form>
   );
 }
-

@@ -69,7 +69,7 @@ export function MatchDetailContent({
 
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-6">
         <section className="grid gap-6 md:grid-cols-[1.1fr_1fr]">
-          <div className="space-y-4">
+          <div className="flex flex-col gap-6">
             <MatchSummaryCard match={match} summary={summary} />
             <ReasonDistribution
               winReasons={winReasons}
