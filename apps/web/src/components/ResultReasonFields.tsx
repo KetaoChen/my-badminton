@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Radio, Segmented, Space } from "antd";
 
 type Props = {
   defaultResult?: "win" | "lose";
@@ -33,19 +34,19 @@ export function ResultReasonFields({
   resultName = "result",
   reasonName = "pointReason",
 }: Props) {
-  const reasonsFor = (res: "win" | "lose") =>
-    res === "win" ? winReasons : loseReasons;
-
   const [result, setResult] = useState<"win" | "lose">(defaultResult);
   const [reason, setReason] = useState<string>(() => {
-    const available = reasonsFor(defaultResult);
+    const available = defaultResult === "win" ? winReasons : loseReasons;
     if (defaultReason && available.includes(defaultReason as never)) {
       return defaultReason;
     }
     return available[0];
   });
 
-  const reasons = useMemo(() => reasonsFor(result), [result]);
+  const reasons = useMemo(
+    () => (result === "win" ? winReasons : loseReasons),
+    [result],
+  );
   const safeReason = useMemo(() => {
     if (reasons.includes(reason as never)) return reason;
     if (defaultReason && reasons.includes(defaultReason as never)) {
@@ -55,49 +56,44 @@ export function ResultReasonFields({
   }, [reason, defaultReason, reasons]);
 
   return (
-    <div className="space-y-2">
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">结果 *</label>
-        <select
-          name={resultName}
-          value={result}
-          onChange={(e) => {
-            const nextResult = e.target.value as "win" | "lose";
-            setResult(nextResult);
-            const nextReasons = reasonsFor(nextResult);
-            setReason((prev) =>
-              nextReasons.includes(prev as never) ? prev : nextReasons[0]
-            );
-          }}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-          required
-        >
-          <option value="win">得分</option>
-          <option value="lose">失分</option>
-        </select>
-      </div>
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-slate-700">
+    <Space direction="vertical" size={8} className="w-full">
+      <Segmented
+        value={result}
+        onChange={(value) => {
+          const nextResult = value as "win" | "lose";
+          setResult(nextResult);
+          const nextReasons = nextResult === "win" ? winReasons : loseReasons;
+          setReason((prev) =>
+            nextReasons.includes(prev as never) ? prev : nextReasons[0],
+          );
+        }}
+        options={[
+          { label: "得分", value: "win" },
+          { label: "失分", value: "lose" },
+        ]}
+        size="large"
+        block
+      />
+      <input type="hidden" name={resultName} value={result} />
+
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-slate-700">
           {result === "win" ? "得分原因" : "失分原因"}
-        </label>
-        <select
-          name={reasonName}
+        </span>
+        <Radio.Group
+          onChange={(e) => setReason(e.target.value)}
           value={safeReason}
-          onChange={(e) => {
-            const next = e.target.value;
-            const allowed = reasonsFor(result);
-            setReason(allowed.includes(next as never) ? next : allowed[0]);
-          }}
-          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-          required
         >
-          {reasons.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
+          <Space direction="vertical">
+            {reasons.map((r) => (
+              <Radio key={r} value={r}>
+                {r}
+              </Radio>
+            ))}
+          </Space>
+        </Radio.Group>
+        <input type="hidden" name={reasonName} value={safeReason} />
       </div>
-    </div>
+    </Space>
   );
 }

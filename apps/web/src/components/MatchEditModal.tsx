@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { Button, Input, Select, Space } from "antd";
 import { Modal } from "./Modal";
 
 type Match = {
@@ -39,6 +40,10 @@ export function MatchEditModal({
   action,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [opponentId, setOpponentId] = useState<string>(match.opponentId ?? "");
+  const [tournamentId, setTournamentId] = useState<string>(
+    match.tournamentId ?? "",
+  );
 
   const tournamentNameDefault = useMemo(
     () => (match.tournamentId ? "" : ""),
@@ -47,125 +52,86 @@ export function MatchEditModal({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-      >
-        编辑比赛
-      </button>
+      <Button onClick={() => setOpen(true)}>编辑比赛</Button>
 
       <Modal
         open={open}
         onClose={() => setOpen(false)}
         title="编辑比赛信息"
-        maxWidthClass="max-w-3xl"
       >
-        <form
-          action={action}
-          onSubmit={() => setOpen(false)}
-          className="grid gap-4 md:grid-cols-2"
-        >
-          <div className="flex flex-col">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+        <form action={action} onSubmit={() => setOpen(false)} className="grid gap-4 md:grid-cols-2">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
               比赛名称
-            </label>
-            <input
-              name="title"
-              defaultValue={match.title}
-              required
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-            />
+            </span>
+            <Input name="title" defaultValue={match.title} required />
           </div>
-          <div className="flex flex-col">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
               日期
-            </label>
-            <input
+            </span>
+            <Input
               type="date"
               name="matchDate"
               defaultValue={formatInputDate(match.matchDate)}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
             />
           </div>
 
-          <div className="flex flex-col">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
               对手
-            </label>
-            <select
-              name="opponentId"
-              defaultValue={match.opponentId ?? ""}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-            >
-              <option value="">选择已有对手</option>
-              {opponents.map((opponent) => (
-                <option key={opponent.id} value={opponent.id}>
-                  {opponent.name}
-                </option>
-              ))}
-            </select>
-            <input
+            </span>
+            <Select
+              value={opponentId}
+              onChange={(value) => setOpponentId(value)}
+              allowClear
+              placeholder="选择已有对手"
+              options={opponents.map((o) => ({ label: o.name, value: o.id }))}
+            />
+            <input type="hidden" name="opponentId" value={opponentId} />
+            <Input
               name="opponent"
               defaultValue={match.opponent ?? ""}
-              className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
               placeholder="手动输入对手（留空则仅使用下拉选择）"
             />
           </div>
 
-          <div className="flex flex-col">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
               赛事
-            </label>
-            <div className="flex gap-2">
-              <select
-                name="tournamentId"
-                defaultValue={match.tournamentId ?? ""}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
-              >
-                <option value="">选择已有赛事</option>
-                {tournaments.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <input
+            </span>
+            <Select
+              value={tournamentId}
+              onChange={(value) => setTournamentId(value)}
+              allowClear
+              placeholder="选择已有赛事"
+              options={tournaments.map((t) => ({ label: t.name, value: t.id }))}
+            />
+            <input type="hidden" name="tournamentId" value={tournamentId} />
+            <Input
               name="tournamentName"
               defaultValue={tournamentNameDefault}
-              className="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
               placeholder="赛事名称（填或选即为正式赛）"
             />
           </div>
 
-          <div className="md:col-span-2 flex flex-col">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="md:col-span-2 flex flex-col gap-1">
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
               备注
-            </label>
-            <textarea
+            </span>
+            <Input.TextArea
               name="notes"
               defaultValue={match.notes ?? ""}
               rows={3}
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm shadow-inner focus:border-slate-400 focus:outline-none"
               placeholder="可选"
             />
           </div>
 
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-            >
+            <Button onClick={() => setOpen(false)}>取消</Button>
+            <Button type="primary" htmlType="submit">
               保存
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { updateRally } from "@/lib/actions";
+import { Button, Checkbox, Input, InputNumber, Space } from "antd";
 import { Modal } from "./Modal";
 import { ResultReasonFields } from "./ResultReasonFields";
 
@@ -28,13 +29,14 @@ export function RallyEditModal({ rally }: Props) {
 
   return (
     <>
-      <button
-        type="button"
+      <Button
+        type="link"
+        size="small"
         onClick={() => setOpen(true)}
-        className="text-xs font-semibold text-slate-600 underline-offset-4 hover:underline"
+        className="p-0"
       >
         编辑
-      </button>
+      </Button>
 
       <Modal
         open={open}
@@ -61,28 +63,24 @@ export function RallyEditModal({ rally }: Props) {
             reasonName="pointReason"
           />
 
-          <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              name="excludeFromScore"
-              defaultChecked={!!rally.excludeFromScore}
-              className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-            />
+          <Checkbox
+            name="excludeFromScore"
+            defaultChecked={!!rally.excludeFromScore}
+          >
             不计入比分
-          </label>
+          </Checkbox>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
               <span className="text-[11px] uppercase tracking-wide text-slate-500">
                 战术得分
               </span>
-              <input
+              <InputNumber
                 name="tacticScore"
-                type="number"
                 min={0}
                 max={10}
-                defaultValue={rally.tacticScore ?? ""}
-                className="rounded border border-slate-200 px-3 py-2 shadow-inner focus:border-slate-400 focus:outline-none"
+                className="w-full"
+                defaultValue={rally.tacticScore ?? undefined}
                 placeholder="0-10"
               />
             </label>
@@ -90,13 +88,12 @@ export function RallyEditModal({ rally }: Props) {
               <span className="text-[11px] uppercase tracking-wide text-slate-500">
                 发球到位
               </span>
-              <input
+              <InputNumber
                 name="serveScore"
-                type="number"
                 min={0}
                 max={10}
-                defaultValue={rally.serveScore ?? ""}
-                className="rounded border border-slate-200 px-3 py-2 shadow-inner focus:border-slate-400 focus:outline-none"
+                className="w-full"
+                defaultValue={rally.serveScore ?? undefined}
                 placeholder="0-10"
               />
             </label>
@@ -107,13 +104,12 @@ export function RallyEditModal({ rally }: Props) {
               <span className="text-[11px] uppercase tracking-wide text-slate-500">
                 球到位
               </span>
-              <input
+              <InputNumber
                 name="placementScore"
-                type="number"
                 min={0}
                 max={10}
-                defaultValue={rally.placementScore ?? ""}
-                className="rounded border border-slate-200 px-3 py-2 shadow-inner focus:border-slate-400 focus:outline-none"
+                className="w-full"
+                defaultValue={rally.placementScore ?? undefined}
                 placeholder="0-10"
               />
             </label>
@@ -121,13 +117,12 @@ export function RallyEditModal({ rally }: Props) {
               <span className="text-[11px] uppercase tracking-wide text-slate-500">
                 站位/步伐
               </span>
-              <input
+              <InputNumber
                 name="footworkScore"
-                type="number"
                 min={0}
                 max={10}
-                defaultValue={rally.footworkScore ?? ""}
-                className="rounded border border-slate-200 px-3 py-2 shadow-inner focus:border-slate-400 focus:outline-none"
+                className="w-full"
+                defaultValue={rally.footworkScore ?? undefined}
                 placeholder="0-10"
               />
             </label>
@@ -137,30 +132,20 @@ export function RallyEditModal({ rally }: Props) {
             <span className="text-[11px] uppercase tracking-wide text-slate-500">
               备注
             </span>
-            <textarea
+            <Input.TextArea
               name="notes"
               defaultValue={rally.notes ?? ""}
               rows={3}
-              className="rounded border border-slate-200 px-3 py-2 shadow-inner focus:border-slate-400 focus:outline-none"
               placeholder="如击球模式、弱点、战术等"
             />
           </label>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
-            >
+          <Space className="flex justify-end w-full pt-2" size={8}>
+            <Button onClick={() => setOpen(false)}>取消</Button>
+            <Button type="primary" htmlType="submit">
               保存修改
-            </button>
-          </div>
+            </Button>
+          </Space>
         </form>
       </Modal>
     </>
