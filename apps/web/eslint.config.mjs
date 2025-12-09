@@ -11,6 +11,10 @@ const eslintConfig = defineConfig([
     rules: {
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
       "react/jsx-boolean-value": ["warn", "never"],
       "react/jsx-curly-brace-presence": [
         "warn",
