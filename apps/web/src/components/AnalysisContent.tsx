@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Col, Row } from "antd";
 import { AppHeader } from "./AppHeader";
-import { AbilityAverageCard } from "./analysis/AbilityAverageCard";
 import { AbilitySeriesCard } from "./analysis/AbilitySeriesCard";
 import { AnalysisFilterForm } from "./analysis/AnalysisFilterForm";
 import { MatchSelector } from "./analysis/MatchSelector";
@@ -66,6 +65,10 @@ export function AnalysisContent({
       "#6366f1",
       "#ef4444",
       "#14b8a6",
+      "#a855f7",
+      "#f97316",
+      "#10b981",
+      "#3b82f6",
     ];
     const matchCount = selectedMatches.length;
     const rallyCount = selectedMatches.reduce(
@@ -99,13 +102,13 @@ export function AnalysisContent({
       }
     }
 
-    const winReasonShares = Array.from(winReasonTotals.entries()).map(
-      ([reason, shareSum]) => ({
+    const winReasonShares = Array.from(winReasonTotals.entries())
+      .filter(([reason]) => reason !== "其他")
+      .map(([reason, shareSum]) => ({
         reason,
         avgShare: matchCount === 0 ? 0 : shareSum / matchCount,
         matches: matchCount,
-      })
-    );
+      }));
     const loseReasonShares = Array.from(loseReasonTotals.entries()).map(
       ([reason, shareSum]) => ({
         reason,
@@ -114,17 +117,17 @@ export function AnalysisContent({
       })
     );
 
-    const topWinReasons = [...winReasonShares]
-      .sort((a, b) => b.avgShare - a.avgShare)
-      .slice(0, 5);
-    const topLoseReasons = [...loseReasonShares]
-      .sort((a, b) => b.avgShare - a.avgShare)
-      .slice(0, 5);
+    const winReasonList = [...winReasonShares].sort(
+      (a, b) => b.avgShare - a.avgShare
+    );
+    const loseReasonList = [...loseReasonShares].sort(
+      (a, b) => b.avgShare - a.avgShare
+    );
 
     const labelForMatch = (m: (typeof selectedMatches)[number]) =>
       `${m.matchDate ?? "无日期"} · ${m.title}`;
 
-    const winReasonSeries = topWinReasons.map((r, idx) => ({
+    const winReasonSeries = winReasonList.map((r, idx) => ({
       label: r.reason,
       color: reasonColors[idx % reasonColors.length],
       points: selectedMatches.map((m) => ({
@@ -133,7 +136,7 @@ export function AnalysisContent({
       })),
     }));
 
-    const loseReasonSeries = topLoseReasons.map((r, idx) => ({
+    const loseReasonSeries = loseReasonList.map((r, idx) => ({
       label: r.reason,
       color: reasonColors[idx % reasonColors.length],
       points: selectedMatches.map((m) => ({
@@ -212,6 +215,12 @@ export function AnalysisContent({
         <StatsOverview analysis={{ ...analysis, ...aggregated }} />
 
         <Row gutter={16}>
+          <Col xs={24}>
+            <AbilitySeriesCard series={aggregated.abilityTimeSeries} />
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
           <Col xs={24} lg={12}>
             <ReasonShareCard
               title="得分原因（均值占比）"
@@ -229,26 +238,19 @@ export function AnalysisContent({
         </Row>
 
         <Row gutter={16}>
-          <Col xs={24} lg={12}>
+          <Col xs={24}>
             <ReasonSeriesCard
               title="得分原因随时间"
               series={aggregated.winReasonSeries}
             />
           </Col>
-          <Col xs={24} lg={12}>
+        </Row>
+        <Row gutter={16}>
+          <Col xs={24}>
             <ReasonSeriesCard
               title="失分原因随时间"
               series={aggregated.loseReasonSeries}
             />
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col xs={24} lg={12}>
-            <AbilityAverageCard abilities={aggregated.abilities} />
-          </Col>
-          <Col xs={24} lg={12}>
-            <AbilitySeriesCard series={aggregated.abilityTimeSeries} />
           </Col>
         </Row>
       </main>

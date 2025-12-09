@@ -1,6 +1,7 @@
 "use client";
 
-import { Checkbox, Tag } from "antd";
+import Link from "next/link";
+import { Button, Checkbox, Tag } from "antd";
 
 import { type AnalysisMatch } from "./types";
 
@@ -53,33 +54,50 @@ export function MatchSelector({ matches, selectedIds, onChange }: Props) {
             const win = m.wins > m.losses;
             const draw = m.wins === m.losses;
             return (
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
                 key={m.id}
-                className="flex w-full items-center gap-3 bg-white px-6 py-3 text-left hover:bg-slate-50 focus:outline-none"
+                className="flex w-full items-center justify-between gap-3 bg-white px-6 py-3 text-left hover:bg-slate-50 focus:outline-none"
                 onClick={() => toggleOne(m.id, !checked)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleOne(m.id, !checked);
+                  }
+                }}
               >
-                <Checkbox
-                  checked={checked}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    toggleOne(m.id, e.target.checked);
-                  }}
-                />
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-900">
-                      {m.matchDate ?? "无日期"} · {m.title}
-                    </span>
-                    <Tag color={win ? "green" : draw ? "default" : "red"}>
-                      {win ? "胜" : draw ? "平" : "负"}
-                    </Tag>
-                  </div>
-                  <div className="text-xs text-slate-600">
-                    对手：{m.opponentName} · 得失分：{m.wins}-{m.losses}
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={checked}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleOne(m.id, e.target.checked);
+                    }}
+                  />
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-slate-900">
+                        {m.matchDate ?? "无日期"} · {m.title}
+                      </span>
+                      <Tag color={win ? "green" : draw ? "default" : "red"}>
+                        {win ? "胜" : draw ? "平" : "负"}
+                      </Tag>
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      对手：{m.opponentName} · 得失分：{m.wins}-{m.losses}
+                    </div>
                   </div>
                 </div>
-              </button>
+                <Link
+                  href={`/matches/${m.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Button type="link" size="small">
+                    详情
+                  </Button>
+                </Link>
+              </div>
             );
           })
         )}

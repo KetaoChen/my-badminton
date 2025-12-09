@@ -27,7 +27,7 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend,
+  Legend
 );
 
 function shortenLabel(label: string) {
@@ -106,4 +106,3 @@ export function ReasonShareLineChart({ series }: { series: Series[] }) {
     </div>
   );
 }
-

@@ -11,25 +11,36 @@ type Props = {
 export function StatsOverview({ analysis }: Props) {
   return (
     <Card className="shadow-sm">
-      <Row gutter={12}>
-        <Col xs={12} md={6}>
+      <Row gutter={[12, 12]} justify="start">
+        <Col flex="1 0 20%" style={{ minWidth: 140 }}>
           <Statistic title="总比赛" value={analysis.matchCount} />
         </Col>
-        <Col xs={12} md={6}>
+        <Col flex="1 0 20%" style={{ minWidth: 140 }}>
           <Statistic
             title="胜率(按场)"
             value={Number(analysis.winRate.toFixed(1))}
             suffix="%"
           />
         </Col>
-        <Col xs={12} md={6}>
-          <Statistic title="场次 胜 / 负" value={`${analysis.matchWins} / ${analysis.matchLosses}`} />
+        <Col flex="1 0 20%" style={{ minWidth: 140 }}>
+          <Statistic
+            title="发球质量"
+            value={Number((analysis.abilities.serve ?? 0).toFixed(1))}
+          />
         </Col>
-        <Col xs={12} md={6}>
-          <Statistic title="回合 胜 / 负" value={`${analysis.wins} / ${analysis.losses}`} />
+        <Col flex="1 0 20%" style={{ minWidth: 140 }}>
+          <Statistic
+            title="战术 / 场"
+            value={Number((analysis.abilities.tactic ?? 0).toFixed(1))}
+          />
+        </Col>
+        <Col flex="1 0 20%" style={{ minWidth: 140 }}>
+          <Statistic
+            title="失误 / 场"
+            value={Number((analysis.abilities.error ?? 0).toFixed(1))}
+          />
         </Col>
       </Row>
     </Card>
   );
 }
-

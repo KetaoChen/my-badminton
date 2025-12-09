@@ -272,16 +272,20 @@ export async function getAnalysis(filters: AnalysisFilters) {
       "#6366f1",
       "#ef4444",
       "#14b8a6",
+      "#a855f7",
+      "#f97316",
+      "#10b981",
+      "#3b82f6",
     ];
 
-    const topWinReasons = [...winReasonShares]
-      .sort((a, b) => b.avgShare - a.avgShare)
-      .slice(0, 5);
-    const topLoseReasons = [...loseReasonShares]
-      .sort((a, b) => b.avgShare - a.avgShare)
-      .slice(0, 5);
+    const winReasonList = [...winReasonShares].sort(
+      (a, b) => b.avgShare - a.avgShare
+    );
+    const loseReasonList = [...loseReasonShares].sort(
+      (a, b) => b.avgShare - a.avgShare
+    );
 
-    const winReasonSeries = topWinReasons.map((r, idx) => ({
+    const winReasonSeries = winReasonList.map((r, idx) => ({
       label: r.reason,
       color: reasonColors[idx % reasonColors.length],
       points: selected.map((m) => ({
@@ -290,7 +294,7 @@ export async function getAnalysis(filters: AnalysisFilters) {
       })),
     }));
 
-    const loseReasonSeries = topLoseReasons.map((r, idx) => ({
+    const loseReasonSeries = loseReasonList.map((r, idx) => ({
       label: r.reason,
       color: reasonColors[idx % reasonColors.length],
       points: selected.map((m) => ({
