@@ -63,7 +63,7 @@ export function ResultReasonFields({
   }, [result, safeReason, onChange]);
 
   return (
-    <Space direction="vertical" size={8} className="w-full">
+    <Space orientation="vertical" size={8} className="w-full">
       <Segmented
         value={result}
         onChange={(value) => {

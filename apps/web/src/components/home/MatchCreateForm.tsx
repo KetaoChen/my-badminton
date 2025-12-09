@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Checkbox, Input, Typography, Button, Select } from "antd";
 
 import { createMatch } from "@/lib/actions";
-import { runClientAction } from "@/lib/clientActions";
+import { useRunClientAction } from "@/lib/clientActions";
 import { type Option } from "./types";
 
 type Props = {
@@ -18,6 +18,7 @@ export function MatchCreateForm({ opponents, tournaments }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [opponentId, setOpponentId] = useState<string>("");
   const [tournamentId, setTournamentId] = useState<string>("");
+  const runClientAction = useRunClientAction();
 
   return (
     <form

@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Button, Checkbox, Input, InputNumber, Space } from "antd";
 
 import { updateRally } from "@/lib/actions";
-import { runClientAction } from "@/lib/clientActions";
+import { useRunClientAction } from "@/lib/clientActions";
 import { Modal } from "./Modal";
 import { ResultReasonFields } from "./ResultReasonFields";
 
@@ -28,6 +28,7 @@ export function RallyEditModal({ rally }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const runClientAction = useRunClientAction();
 
   return (
     <>

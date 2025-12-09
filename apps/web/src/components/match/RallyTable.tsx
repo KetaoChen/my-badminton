@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button, Empty, Popconfirm, Space, Table, Tag } from "antd";
 
 import { deleteRally } from "@/lib/actions";
-import { runClientAction } from "@/lib/clientActions";
+import { useRunClientAction } from "@/lib/clientActions";
 import { RallyEditModal } from "../RallyEditModal";
 import { type Rally } from "./types";
 
@@ -16,6 +16,7 @@ type Props = {
 
 export function RallyTable({ matchId, rallies }: Props) {
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const runClientAction = useRunClientAction();
 
   const rallyData = rallies.map((r) => ({
     ...r,
@@ -147,6 +148,8 @@ function DeleteRallyButton({
   onStart: () => void;
   onDone: () => void;
 }) {
+  const runClientAction = useRunClientAction();
+
   return (
     <Popconfirm
       title="确定删除该回合？"

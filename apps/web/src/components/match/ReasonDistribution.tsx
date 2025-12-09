@@ -17,7 +17,7 @@ export function ReasonDistribution({ winReasons, loseReasons }: Props) {
           <Typography.Text type="success" className="text-xs uppercase">
             得分原因
           </Typography.Text>
-          <Space direction="vertical" className="mt-2 w-full">
+          <Space orientation="vertical" className="mt-2 w-full">
             {winReasons.length === 0 ? (
               <Typography.Text type="secondary">暂无得分记录。</Typography.Text>
             ) : (
@@ -40,7 +40,7 @@ export function ReasonDistribution({ winReasons, loseReasons }: Props) {
           <Typography.Text type="danger" className="text-xs uppercase">
             失分原因
           </Typography.Text>
-          <Space direction="vertical" className="mt-2 w-full">
+          <Space orientation="vertical" className="mt-2 w-full">
             {loseReasons.length === 0 ? (
               <Typography.Text type="secondary">暂无失分记录。</Typography.Text>
             ) : (

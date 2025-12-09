@@ -17,7 +17,7 @@ export function ReasonShareCard({ title, reasons, color = "green" }: Props) {
       {reasons.length === 0 ? (
         <Typography.Text type="secondary">暂无数据</Typography.Text>
       ) : (
-        <Space direction="vertical" className="w-full">
+        <Space orientation="vertical" className="w-full">
           {reasons.map((r) => (
             <ReasonBar
               key={r.reason}

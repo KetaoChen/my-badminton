@@ -11,7 +11,7 @@ type Props = {
 export function AbilityAverageCard({ abilities }: Props) {
   return (
     <Card title="能力平均分" className="shadow-sm">
-      <Space direction="vertical" className="w-full">
+      <Space orientation="vertical" className="w-full">
         <ScoreBar label="发球" value={abilities.serve} />
         <ScoreBar label="战术" value={abilities.tactic} />
       </Space>

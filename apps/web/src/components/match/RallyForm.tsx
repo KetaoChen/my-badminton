@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Button, Checkbox, Form, Input, InputNumber } from "antd";
 
 import { createRally } from "@/lib/actions";
-import { runClientAction } from "@/lib/clientActions";
+import { useRunClientAction } from "@/lib/clientActions";
 import { ResultReasonFields } from "../ResultReasonFields";
 
 type Props = {
@@ -20,6 +20,7 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
   const [resetKey, setResetKey] = useState(0);
   const [resultValue, setResultValue] = useState<"win" | "lose">("win");
   const [reasonValue, setReasonValue] = useState<string>(defaultReason);
+  const runClientAction = useRunClientAction();
 
   return (
     <Form

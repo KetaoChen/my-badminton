@@ -4,7 +4,7 @@ import { Button, Popconfirm } from "antd";
 import { useRouter } from "next/navigation";
 
 import { deleteMatch } from "@/lib/actions";
-import { runClientAction } from "@/lib/clientActions";
+import { useRunClientAction } from "@/lib/clientActions";
 
 type Props = {
   matchId: string;
@@ -12,6 +12,7 @@ type Props = {
 
 export function DeleteMatchButton({ matchId }: Props) {
   const router = useRouter();
+  const runClientAction = useRunClientAction();
 
   return (
     <Popconfirm

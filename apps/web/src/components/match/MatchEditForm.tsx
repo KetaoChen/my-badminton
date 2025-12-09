@@ -6,7 +6,7 @@ import { Button, Input, Select } from "antd";
 
 import { type Option } from "../home/types";
 import { type EditableMatch } from "./types";
-import { runClientAction } from "@/lib/clientActions";
+import { useRunClientAction } from "@/lib/clientActions";
 
 type Props = {
   match: EditableMatch;
@@ -33,6 +33,7 @@ export function MatchEditForm({
   const [tournamentId, setTournamentId] = useState<string>(match.tournamentId ?? "");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const runClientAction = useRunClientAction();
 
   const tournamentNameDefault = useMemo(
     () => (match.tournamentId ? "" : ""),
