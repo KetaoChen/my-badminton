@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Radio, Segmented, Space } from "antd";
 
 type Props = {
@@ -8,6 +8,7 @@ type Props = {
   defaultReason?: string | null;
   resultName?: string;
   reasonName?: string;
+  onChange?: (value: { result: "win" | "lose"; reason: string }) => void;
 };
 
 const winReasons = [
@@ -33,6 +34,7 @@ export function ResultReasonFields({
   defaultReason,
   resultName = "result",
   reasonName = "pointReason",
+  onChange,
 }: Props) {
   const [result, setResult] = useState<"win" | "lose">(defaultResult);
   const [reason, setReason] = useState<string>(() => {
@@ -54,6 +56,11 @@ export function ResultReasonFields({
     }
     return reasons[0];
   }, [reason, defaultReason, reasons]);
+
+  useEffect(() => {
+    if (!onChange) return;
+    onChange({ result, reason: safeReason });
+  }, [result, safeReason, onChange]);
 
   return (
     <Space direction="vertical" size={8} className="w-full">

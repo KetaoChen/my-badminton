@@ -15,22 +15,54 @@ type Props = {
 export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [form] = Form.useForm();
+  const [resetKey, setResetKey] = useState(0);
+  const [resultValue, setResultValue] = useState<"win" | "lose">("win");
+  const [reasonValue, setReasonValue] = useState<string>(defaultReason);
 
   return (
     <Form
+      form={form}
       layout="vertical"
       component="form"
       size="middle"
       className="space-y-2"
+      initialValues={{
+        serveScore: undefined,
+        excludeFromScore: false,
+        tacticUsed: false,
+        notes: "",
+      }}
       onSubmitCapture={(event) => {
         event.preventDefault();
-        const form = event.currentTarget;
-        const formData = new FormData(form);
+        const formEl = event.currentTarget;
+        const formData = new FormData(formEl);
+        formData.set("matchId", matchId);
+        formData.set("result", resultValue);
+        formData.set("pointReason", reasonValue);
+        const values = form.getFieldsValue();
+        formData.set("excludeFromScore", values.excludeFromScore ? "on" : "");
+        formData.set("tacticUsed", values.tacticUsed ? "on" : "");
+        formData.set(
+          "serveScore",
+          values.serveScore !== undefined && values.serveScore !== null
+            ? String(values.serveScore)
+            : ""
+        );
+        formData.set("notes", values.notes ?? "");
         setError(null);
         startTransition(async () => {
           try {
             await createRally(formData);
-            form.reset();
+            form.resetFields([
+              "serveScore",
+              "excludeFromScore",
+              "tacticUsed",
+              "notes",
+            ]);
+            setResetKey((key) => key + 1);
+            setResultValue("win");
+            setReasonValue(defaultReason);
           } catch (e) {
             console.error(e);
             setError("保存失败，请重试");
@@ -41,16 +73,19 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
       <input type="hidden" name="matchId" value={matchId} />
 
       <ResultReasonFields
-        key={`create-${matchId}`}
+        key={`create-${matchId}-${resetKey}`}
         defaultResult="win"
         defaultReason={defaultReason}
+        onChange={({ result, reason }) => {
+          setResultValue(result);
+          setReasonValue(reason);
+        }}
       />
 
-      <Form.Item className="!mb-3">
+      <Form.Item name="serveScore" className="!mb-3">
         <div className="flex items-center gap-3">
           <span className="text-sm text-slate-700">发球到位程度</span>
           <InputNumber
-            name="serveScore"
             min={0}
             max={10}
             className="w-28"
@@ -81,9 +116,8 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
 
       <div className="h-px w-full bg-slate-200" />
 
-      <Form.Item label="备注" className="!mb-3">
+      <Form.Item name="notes" label="备注" className="!mb-3">
         <Input.TextArea
-          name="notes"
           rows={3}
           placeholder="如击球模式、弱点、战术等"
           disabled={pending}
