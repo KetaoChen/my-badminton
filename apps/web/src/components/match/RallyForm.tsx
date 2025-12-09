@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Button, Checkbox, Form, Input, InputNumber } from "antd";
 
 import { createRally } from "@/lib/actions";
+import { runClientAction } from "@/lib/clientActions";
 import { ResultReasonFields } from "../ResultReasonFields";
 
 type Props = {
@@ -52,21 +53,20 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
         formData.set("notes", values.notes ?? "");
         setError(null);
         startTransition(async () => {
-          try {
-            await createRally(formData);
-            form.resetFields([
-              "serveScore",
-              "excludeFromScore",
-              "tacticUsed",
-              "notes",
-            ]);
-            setResetKey((key) => key + 1);
-            setResultValue("win");
-            setReasonValue(defaultReason);
-          } catch (e) {
-            console.error(e);
-            setError("保存失败，请重试");
-          }
+          const ok = await runClientAction(() => createRally(formData), {
+            onErrorMessage: (msg) => setError(msg),
+            successMessage: "回合已保存",
+          });
+          if (!ok) return;
+          form.resetFields([
+            "serveScore",
+            "excludeFromScore",
+            "tacticUsed",
+            "notes",
+          ]);
+          setResetKey((key) => key + 1);
+          setResultValue("win");
+          setReasonValue(defaultReason);
         });
       }}
     >

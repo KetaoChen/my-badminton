@@ -1,13 +1,18 @@
 "use client";
 
-import { deleteMatch } from "@/lib/actions";
 import { Button, Popconfirm } from "antd";
+import { useRouter } from "next/navigation";
+
+import { deleteMatch } from "@/lib/actions";
+import { runClientAction } from "@/lib/clientActions";
 
 type Props = {
   matchId: string;
 };
 
 export function DeleteMatchButton({ matchId }: Props) {
+  const router = useRouter();
+
   return (
     <Popconfirm
       title="删除比赛"
@@ -16,7 +21,10 @@ export function DeleteMatchButton({ matchId }: Props) {
       cancelText="取消"
       okButtonProps={{ danger: true }}
       onConfirm={async () => {
-        await deleteMatch(matchId);
+        const ok = await runClientAction(() => deleteMatch(matchId), {
+          successMessage: "比赛已删除",
+        });
+        if (ok) router.push("/");
       }}
     >
       <Button danger ghost>

@@ -6,6 +6,7 @@ import { Button, Input, Select } from "antd";
 
 import { type Option } from "../home/types";
 import { type EditableMatch } from "./types";
+import { runClientAction } from "@/lib/clientActions";
 
 type Props = {
   match: EditableMatch;
@@ -47,13 +48,12 @@ export function MatchEditForm({
         const formData = new FormData(form);
         setError(null);
         startTransition(async () => {
-          try {
-            await action(formData);
-            onSubmitted?.();
-          } catch (e) {
-            console.error(e);
-            setError("保存失败，请重试");
-          }
+          const ok = await runClientAction(() => action(formData), {
+            onErrorMessage: (msg) => setError(msg),
+            successMessage: "比赛已更新",
+          });
+          if (!ok) return;
+          onSubmitted?.();
         });
       }}
       className="grid gap-4 md:grid-cols-2"

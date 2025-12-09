@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+
+import { Button, Checkbox, Input, InputNumber, Space } from "antd";
 
 import { updateRally } from "@/lib/actions";
-import { Button, Checkbox, Input, InputNumber, Space } from "antd";
+import { runClientAction } from "@/lib/clientActions";
 import { Modal } from "./Modal";
 import { ResultReasonFields } from "./ResultReasonFields";
 
@@ -24,6 +26,8 @@ type Props = {
 
 export function RallyEditModal({ rally }: Props) {
   const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <>
@@ -42,9 +46,18 @@ export function RallyEditModal({ rally }: Props) {
         title={`编辑回合 #${rally.id.slice(0, 6)}`}
       >
         <form
-          action={async (formData) => {
-            await updateRally(formData);
-            setOpen(false);
+          onSubmit={(event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            setError(null);
+            startTransition(async () => {
+              const ok = await runClientAction(() => updateRally(formData), {
+                onErrorMessage: (msg) => setError(msg),
+                successMessage: "回合已更新",
+              });
+              if (!ok) return;
+              setOpen(false);
+            });
           }}
           className="space-y-3 text-sm"
         >
@@ -101,12 +114,26 @@ export function RallyEditModal({ rally }: Props) {
               defaultValue={rally.notes ?? ""}
               rows={3}
               placeholder="如击球模式、弱点、战术等"
+              disabled={pending}
             />
           </label>
 
+          {error ? (
+            <div className="text-sm text-red-600" role="alert">
+              {error}
+            </div>
+          ) : null}
+
           <Space className="flex justify-end w-full pt-2" size={8}>
-            <Button onClick={() => setOpen(false)}>取消</Button>
-            <Button type="primary" htmlType="submit">
+            <Button onClick={() => setOpen(false)} disabled={pending}>
+              取消
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={pending}
+              disabled={pending}
+            >
               保存修改
             </Button>
           </Space>
@@ -115,4 +142,3 @@ export function RallyEditModal({ rally }: Props) {
     </>
   );
 }
-

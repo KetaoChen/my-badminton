@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Checkbox, Input, Typography, Button, Select } from "antd";
 
 import { createMatch } from "@/lib/actions";
+import { runClientAction } from "@/lib/clientActions";
 import { type Option } from "./types";
 
 type Props = {
@@ -29,15 +30,14 @@ export function MatchCreateForm({ opponents, tournaments }: Props) {
         formData.set("tournamentId", tournamentId);
         setError(null);
         startTransition(async () => {
-          try {
-            await createMatch(formData);
-            form.reset();
-            setOpponentId("");
-            setTournamentId("");
-          } catch (e) {
-            console.error(e);
-            setError("保存失败，请重试");
-          }
+          const ok = await runClientAction(() => createMatch(formData), {
+            onErrorMessage: (msg) => setError(msg),
+            successMessage: "比赛已创建",
+          });
+          if (!ok) return;
+          form.reset();
+          setOpponentId("");
+          setTournamentId("");
         });
       }}
     >
@@ -82,9 +82,7 @@ export function MatchCreateForm({ opponents, tournaments }: Props) {
         </div>
       </div>
       <div className="flex flex-col gap-4">
-        <Typography.Text strong>
-          赛事名称（填或选则视为正式赛）
-        </Typography.Text>
+        <Typography.Text strong>赛事名称（填或选则视为正式赛）</Typography.Text>
         <div className="flex flex-col gap-3">
           <Select
             value={tournamentId || undefined}
@@ -95,7 +93,7 @@ export function MatchCreateForm({ opponents, tournaments }: Props) {
               label: tournament.name,
               value: tournament.id,
             }))}
-          classNames={{ popup: { root: "select-dropdown-light" } }}
+            classNames={{ popup: { root: "select-dropdown-light" } }}
             disabled={pending}
           />
           <Input
@@ -121,10 +119,15 @@ export function MatchCreateForm({ opponents, tournaments }: Props) {
         </div>
       ) : null}
 
-      <Button type="primary" htmlType="submit" block loading={pending} disabled={pending}>
+      <Button
+        type="primary"
+        htmlType="submit"
+        block
+        loading={pending}
+        disabled={pending}
+      >
         保存比赛
       </Button>
     </form>
   );
 }
-

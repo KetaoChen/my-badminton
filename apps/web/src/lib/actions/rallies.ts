@@ -24,8 +24,9 @@ export async function createRally(formData: FormData): Promise<void> {
   });
 
   if (!parsed.success) {
-    console.error(parsed.error.flatten().formErrors);
-    return;
+    const msg =
+      parsed.error.flatten().formErrors.join("; ") || "表单数据不合法";
+    throw new Error(msg);
   }
 
   const data = parsed.data;
@@ -106,8 +107,9 @@ export async function updateRally(formData: FormData): Promise<void> {
   });
 
   if (!parsed.success) {
-    console.error(parsed.error.flatten().formErrors);
-    return;
+    const msg =
+      parsed.error.flatten().formErrors.join("; ") || "表单数据不合法";
+    throw new Error(msg);
   }
 
   const data = parsed.data;
@@ -198,8 +200,9 @@ export async function deleteRally(formData: FormData): Promise<void> {
   });
 
   if (!parsed.success) {
-    console.error(parsed.error.flatten().formErrors);
-    return;
+    const msg =
+      parsed.error.flatten().formErrors.join("; ") || "表单数据不合法";
+    throw new Error(msg);
   }
 
   const { matchId, rallyId } = parsed.data;

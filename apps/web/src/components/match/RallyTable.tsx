@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button, Empty, Popconfirm, Space, Table, Tag } from "antd";
 
 import { deleteRally } from "@/lib/actions";
+import { runClientAction } from "@/lib/clientActions";
 import { RallyEditModal } from "../RallyEditModal";
 import { type Rally } from "./types";
 
@@ -156,7 +157,9 @@ function DeleteRallyButton({
         const formData = new FormData();
         formData.append("matchId", matchId);
         formData.append("rallyId", rallyId);
-        await deleteRally(formData);
+        await runClientAction(() => deleteRally(formData), {
+          successMessage: "回合已删除",
+        });
         onDone();
       }}
     >

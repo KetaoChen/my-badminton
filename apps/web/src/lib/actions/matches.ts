@@ -3,7 +3,6 @@
 import { db, schema } from "@my-badminton/db/client";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { requireAuth } from "@/lib/auth";
 import { matchFormSchema } from "./schemas";
@@ -120,8 +119,9 @@ export async function createMatch(formData: FormData): Promise<void> {
   });
 
   if (!parsed.success) {
-    console.error(parsed.error.flatten().formErrors);
-    return;
+    const msg =
+      parsed.error.flatten().formErrors.join("; ") || "表单数据不合法";
+    throw new Error(msg);
   }
 
   const {
@@ -179,9 +179,10 @@ export async function deleteMatch(matchId: string): Promise<void> {
   const userId = await requireAuth();
   await db
     .delete(schema.matches)
-    .where(and(eq(schema.matches.id, matchId), eq(schema.matches.userId, userId)));
+    .where(
+      and(eq(schema.matches.id, matchId), eq(schema.matches.userId, userId))
+    );
   revalidatePath("/");
-  redirect("/");
 }
 
 export async function updateMatch(
@@ -200,8 +201,9 @@ export async function updateMatch(
   });
 
   if (!parsed.success) {
-    console.error(parsed.error.flatten().formErrors);
-    return;
+    const msg =
+      parsed.error.flatten().formErrors.join("; ") || "表单数据不合法";
+    throw new Error(msg);
   }
 
   const {
@@ -244,4 +246,3 @@ export async function updateMatch(
   revalidatePath(`/matches/${matchId}`);
   revalidatePath("/");
 }
-
