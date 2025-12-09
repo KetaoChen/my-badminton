@@ -56,6 +56,16 @@ export function MatchCreateForm({ opponents, tournaments }: Props) {
           <Typography.Text strong>日期</Typography.Text>
           <Input type="date" name="matchDate" disabled={pending} />
         </div>
+        <div className="space-y-3">
+          <Typography.Text strong>场次（数字）</Typography.Text>
+          <Input
+            type="number"
+            name="matchNumber"
+            min={0}
+            placeholder="可选"
+            disabled={pending}
+          />
+        </div>
       </div>
       <div className="flex flex-col gap-4">
         <Typography.Text strong>对手（可选已有或手填）</Typography.Text>

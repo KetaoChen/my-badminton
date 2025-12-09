@@ -13,6 +13,7 @@ export function abilitySeriesQuery(conditions: Condition[]) {
       id: schema.matches.id,
       title: schema.matches.title,
       matchDate: schema.matches.matchDate,
+      matchNumber: schema.matches.matchNumber,
       opponentName: sql<string>`coalesce(${schema.opponents.name}, ${schema.matches.opponent})`,
       serveAvg: sql<number>`avg(${schema.rallies.serveScore})`,
       serveSum: sql<number>`sum(${schema.rallies.serveScore})`,
@@ -32,12 +33,13 @@ export function abilitySeriesQuery(conditions: Condition[]) {
       schema.matches.id,
       schema.matches.title,
       schema.matches.matchDate,
+      schema.matches.matchNumber,
       schema.opponents.name,
       schema.matches.opponent
     )
     .orderBy(
-      sql`coalesce(${schema.matches.matchDate}, ${schema.matches.createdAt}) asc`
+      sql`coalesce(${schema.matches.matchDate}, ${schema.matches.createdAt}) asc`,
+      schema.matches.matchNumber
     )
     .limit(200);
 }
-

@@ -25,6 +25,7 @@ export type AnalysisMatch = {
   id: string;
   title: string;
   matchDate: string | null;
+  matchNumber?: number | null;
   opponentName: string;
   wins: number;
   losses: number;

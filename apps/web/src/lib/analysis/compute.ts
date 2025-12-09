@@ -185,6 +185,7 @@ export async function getAnalysis(filters: AnalysisFilters) {
       id: m.id,
       title: m.title,
       matchDate: m.matchDate,
+      matchNumber: m.matchNumber ?? null,
       opponentName: m.opponentName ?? "未填写",
       wins: outcome.wins,
       losses: outcome.losses,

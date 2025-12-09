@@ -83,6 +83,22 @@ export function MatchEditForm({
           disabled={pending}
         />
       </div>
+      <div className="flex flex-col gap-1">
+        <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          场次（数字）
+        </span>
+        <Input
+          type="number"
+          name="matchNumber"
+          min={0}
+          defaultValue={
+            match.matchNumber === null || match.matchNumber === undefined
+              ? ""
+              : match.matchNumber
+          }
+          disabled={pending}
+        />
+      </div>
 
       <div className="flex flex-col gap-1">
         <span className="text-xs font-medium uppercase tracking-wide text-slate-500">

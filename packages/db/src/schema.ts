@@ -73,6 +73,7 @@ export const matches = pgTable(
     tournamentId: uuid("tournament_id").references(() => tournaments.id, {
       onDelete: "set null",
     }),
+    matchNumber: integer("match_number"),
     notes: text("notes"),
     userId: uuid("user_id")
       .notNull()

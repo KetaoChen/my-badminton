@@ -2,6 +2,7 @@ export type Match = {
   id: string;
   title: string;
   matchDate: string | null;
+  matchNumber?: number | null;
   opponentId: string | null;
   opponent: string | null;
   opponentName: string | null;
@@ -41,6 +42,7 @@ export type EditableMatch = {
   id: string;
   title: string;
   matchDate: string | null;
+  matchNumber?: number | null;
   opponentId: string | null;
   opponent: string | null;
   opponentName?: string | null;

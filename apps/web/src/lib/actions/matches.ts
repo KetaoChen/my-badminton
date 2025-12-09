@@ -110,6 +110,7 @@ export async function createMatch(formData: FormData): Promise<void> {
   const parsed = matchFormSchema.safeParse({
     title: formData.get("title"),
     matchDate: formData.get("matchDate"),
+    matchNumber: formData.get("matchNumber"),
     opponentId: formData.get("opponentId"),
     opponent: formData.get("opponent"),
     trainingOpponent: formData.get("trainingOpponent"),
@@ -127,6 +128,7 @@ export async function createMatch(formData: FormData): Promise<void> {
   const {
     title,
     matchDate,
+    matchNumber,
     opponent,
     opponentId,
     trainingOpponent,
@@ -167,6 +169,7 @@ export async function createMatch(formData: FormData): Promise<void> {
     opponentId: finalOpponentId,
     opponent: opponent || null,
     tournamentId: finalTournamentId,
+    matchNumber: matchNumber ?? null,
     notes: notes || null,
     matchDate: matchDate || null,
     userId,
@@ -193,6 +196,7 @@ export async function updateMatch(
   const parsed = matchFormSchema.safeParse({
     title: formData.get("title"),
     matchDate: formData.get("matchDate"),
+    matchNumber: formData.get("matchNumber"),
     opponentId: formData.get("opponentId"),
     opponent: formData.get("opponent"),
     tournamentId: formData.get("tournamentId"),
@@ -209,6 +213,7 @@ export async function updateMatch(
   const {
     title,
     matchDate,
+    matchNumber,
     opponent,
     opponentId,
     tournamentId,
@@ -236,6 +241,7 @@ export async function updateMatch(
       opponentId: opponentId || null,
       opponent: opponent || null,
       tournamentId: finalTournamentId,
+      matchNumber: matchNumber ?? null,
       notes: notes || null,
       matchDate: matchDate || null,
     })

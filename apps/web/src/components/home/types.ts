@@ -2,6 +2,7 @@ export type Match = {
   id: string;
   title: string;
   matchDate: string | null;
+  matchNumber?: number | null;
   opponentName: string | null;
   wins: number | null;
   losses: number | null;

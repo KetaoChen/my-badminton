@@ -19,6 +19,16 @@ export const checkboxBoolean = z
 export const matchFormSchema = z.object({
   title: z.string().trim().min(1, "Match title is required"),
   matchDate: z.string().trim().optional(),
+  matchNumber: z
+    .preprocess(
+      (v) => {
+        if (v === null || v === undefined || v === "") return null;
+        const num = Number(v);
+        return Number.isNaN(num) ? v : num;
+      },
+      z.number().nullable()
+    )
+    .optional(),
   opponentId: optionalUuid,
   opponent: z.string().trim().optional(),
   trainingOpponent: checkboxBoolean,
