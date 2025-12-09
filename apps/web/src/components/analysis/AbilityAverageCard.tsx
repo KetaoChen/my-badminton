@@ -13,7 +13,8 @@ export function AbilityAverageCard({ abilities }: Props) {
     <Card title="能力平均分" className="shadow-sm">
       <Space orientation="vertical" className="w-full">
         <ScoreBar label="发球" value={abilities.serve} />
-        <ScoreBar label="战术" value={abilities.tactic} />
+        <CountBar label="战术" value={abilities.tactic} />
+        <CountBar label="失误" value={abilities.error} isError />
       </Space>
     </Card>
   );
@@ -31,6 +32,34 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
         percent={Number(((clamped / 10) * 100).toFixed(1))}
         showInfo={false}
         strokeColor="#0ea5e9"
+      />
+    </div>
+  );
+}
+
+function CountBar({
+  label,
+  value,
+  isError,
+}: {
+  label: string;
+  value: number;
+  isError?: boolean;
+}) {
+  const displayValue = value.toFixed(1);
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between text-xs text-slate-600">
+        <span>{label}</span>
+        <span className="font-medium text-slate-800">
+          {displayValue} 次/场
+        </span>
+      </div>
+      <Progress
+        percent={100}
+        showInfo={false}
+        strokeColor={isError ? "#ef4444" : "#22c55e"}
+        trailColor="#f1f5f9"
       />
     </div>
   );

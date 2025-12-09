@@ -1,5 +1,5 @@
 import { db, schema } from "@my-badminton/db/client";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { requireAuth } from "@/lib/auth";
 import { abilitySeriesQuery } from "./series";
@@ -40,18 +40,6 @@ export async function getAnalysis(filters: AnalysisFilters) {
   const rallyWhere =
     whereMatches === undefined ? rallyScored : and(whereMatches, rallyScored);
 
-  const [totals] =
-    (await db
-      .select({
-        matchCount: sql<number>`count(distinct ${schema.matches.id})`,
-        rallyCount: sql<number>`count(${schema.rallies.id})`,
-        wins: sql<number>`sum(case when ${schema.rallies.result} = 'win' then 1 else 0 end)`,
-        losses: sql<number>`sum(case when ${schema.rallies.result} = 'lose' then 1 else 0 end)`,
-      })
-      .from(schema.rallies)
-      .innerJoin(schema.matches, eq(schema.matches.id, schema.rallies.matchId))
-      .where(rallyWhere)) ?? [];
-
   const matchOutcomes =
     (await db
       .select({
@@ -64,40 +52,14 @@ export async function getAnalysis(filters: AnalysisFilters) {
       .where(rallyWhere)
       .groupBy(schema.matches.id)) ?? [];
 
-  const [abilities] =
-    (await db
-      .select({
-        serve: sql<number>`avg(${schema.rallies.serveScore})`,
-        tactic: sql<number>`avg(${schema.rallies.tacticUsed}::int)`,
-      })
-      .from(schema.rallies)
-      .innerJoin(schema.matches, eq(schema.matches.id, schema.rallies.matchId))
-      .where(rallyWhere)) ?? [];
-
-  const opponentStats = await db
-    .select({
-      opponentId: schema.matches.opponentId,
-      opponentName: sql<string>`coalesce(${schema.opponents.name}, ${schema.matches.opponent})`,
-      wins: sql<number>`sum(case when ${schema.rallies.result} = 'win' then 1 else 0 end)`,
-      losses: sql<number>`sum(case when ${schema.rallies.result} = 'lose' then 1 else 0 end)`,
-      total: sql<number>`count(*)`,
-    })
-    .from(schema.rallies)
-    .innerJoin(schema.matches, eq(schema.matches.id, schema.rallies.matchId))
-    .leftJoin(
-      schema.opponents,
-      eq(schema.opponents.id, schema.matches.opponentId)
-    )
-    .where(rallyWhere)
-    .groupBy(
-      schema.matches.opponentId,
-      schema.opponents.name,
-      schema.matches.opponent
-    )
-    .orderBy(desc(sql<number>`count(*)`))
-    .limit(10);
-
   const abilitySeries = await abilitySeriesQuery(conditions);
+  const matchOutcomeMap = new Map<string, { wins: number; losses: number }>();
+  for (const m of matchOutcomes) {
+    matchOutcomeMap.set(m.matchId, {
+      wins: Number(m.wins ?? 0),
+      losses: Number(m.losses ?? 0),
+    });
+  }
 
   const winWhere =
     whereMatches === undefined
@@ -161,62 +123,6 @@ export async function getAnalysis(filters: AnalysisFilters) {
     loseTotalMap.set(row.matchId, Number(row.total ?? 0));
   }
 
-  const totalWinPoints =
-    winTotalsByMatch.reduce((acc, row) => acc + Number(row.total ?? 0), 0) || 0;
-  const totalLosePoints =
-    loseTotalsByMatch.reduce((acc, row) => acc + Number(row.total ?? 0), 0) ||
-    0;
-
-  const winReasonTotals = new Map<string, number>();
-  for (const row of winByMatchReason) {
-    const key = row.reason ?? "未填写";
-    winReasonTotals.set(
-      key,
-      (winReasonTotals.get(key) ?? 0) + Number(row.count ?? 0)
-    );
-  }
-
-  const loseReasonTotals = new Map<string, number>();
-  for (const row of loseByMatchReason) {
-    const key = row.reason ?? "未填写";
-    loseReasonTotals.set(
-      key,
-      (loseReasonTotals.get(key) ?? 0) + Number(row.count ?? 0)
-    );
-  }
-
-  const winReasonShares = Array.from(winReasonTotals.entries()).map(
-    ([reason, count]) => ({
-      reason,
-      avgShare: totalWinPoints === 0 ? 0 : count / totalWinPoints,
-      matches: winTotalsByMatch.length,
-    })
-  );
-
-  const loseReasonShares = Array.from(loseReasonTotals.entries()).map(
-    ([reason, count]) => ({
-      reason,
-      avgShare: totalLosePoints === 0 ? 0 : count / totalLosePoints,
-      matches: loseTotalsByMatch.length,
-    })
-  );
-
-  const reasonColors = [
-    "#0ea5e9",
-    "#22c55e",
-    "#f59e0b",
-    "#6366f1",
-    "#ef4444",
-    "#14b8a6",
-  ];
-
-  const topWinReasons = [...winReasonShares]
-    .sort((a, b) => b.avgShare - a.avgShare)
-    .slice(0, 5);
-  const topLoseReasons = [...loseReasonShares]
-    .sort((a, b) => b.avgShare - a.avgShare)
-    .slice(0, 5);
-
   const winShareByMatchReason = new Map<string, Map<string, number>>();
   for (const row of winByMatchReason) {
     const total = winTotalMap.get(row.matchId) ?? 0;
@@ -240,75 +146,201 @@ export async function getAnalysis(filters: AnalysisFilters) {
   const labelForMatch = (m: { matchDate: string | null; title: string }) =>
     `${m.matchDate ?? "无日期"} · ${m.title}`;
 
-  const winReasonSeries = topWinReasons.map((r, idx) => ({
-    label: r.reason,
-    color: reasonColors[idx % reasonColors.length],
-    points: abilitySeries.map((m) => ({
-      label: labelForMatch(m),
-      value: winShareByMatchReason.get(m.id)?.get(r.reason) ?? 0,
-    })),
-  }));
+  const errorCountByMatch = await db
+    .select({
+      matchId: schema.rallies.matchId,
+      count: sql<number>`count(*)`,
+    })
+    .from(schema.rallies)
+    .innerJoin(schema.matches, eq(schema.matches.id, schema.rallies.matchId))
+    .where(
+      whereMatches === undefined
+        ? and(
+            eq(schema.rallies.result, "lose"),
+            eq(schema.rallies.pointReason, "我方失误"),
+            rallyScored
+          )
+        : and(
+            eq(schema.rallies.result, "lose"),
+            eq(schema.rallies.pointReason, "我方失误"),
+            rallyScored,
+            whereMatches
+          )
+    )
+    .groupBy(schema.rallies.matchId);
 
-  const loseReasonSeries = topLoseReasons.map((r, idx) => ({
-    label: r.reason,
-    color: reasonColors[idx % reasonColors.length],
-    points: abilitySeries.map((m) => ({
-      label: labelForMatch(m),
-      value: loseShareByMatchReason.get(m.id)?.get(r.reason) ?? 0,
-    })),
-  }));
-
-  const rallyCount = Number(totals?.rallyCount ?? 0);
-  const wins = Number(totals?.wins ?? 0);
-  const losses = Number(totals?.losses ?? 0);
-
-  let matchWins = 0;
-  let matchLosses = 0;
-  for (const m of matchOutcomes) {
-    const mw = Number(m.wins ?? 0);
-    const ml = Number(m.losses ?? 0);
-    if (mw > ml) matchWins += 1;
-    else if (ml > mw) matchLosses += 1;
+  const errorCountMap = new Map<string, number>();
+  for (const row of errorCountByMatch) {
+    errorCountMap.set(row.matchId, Number(row.count ?? 0));
   }
-  const matchCount = Number(totals?.matchCount ?? 0);
-  const winRate =
-    matchCount === 0 ? 0 : Math.round((matchWins / matchCount) * 1000) / 10;
 
-  return {
-    matchCount,
-    matchWins,
-    matchLosses,
-    rallyCount,
-    wins,
-    losses,
-    winRate,
-    winReasonShares,
-    loseReasonShares,
-    winReasonSeries,
-    loseReasonSeries,
-    abilities: {
-      serve: Number(abilities?.serve ?? 0),
-      tactic: Number(abilities?.tactic ?? 0),
-    },
-    opponentStats: opponentStats.map((o) => ({
-      opponentId: o.opponentId,
-      opponentName: o.opponentName ?? "未填写",
-      wins: Number(o.wins ?? 0),
-      losses: Number(o.losses ?? 0),
-      total: Number(o.total ?? 0),
-      winRate:
-        Number(o.total ?? 0) === 0
-          ? 0
-          : Math.round((Number(o.wins ?? 0) / Number(o.total ?? 1)) * 1000) / 10,
-    })),
-    abilityTimeSeries: abilitySeries.map((m) => ({
+  const matches = abilitySeries.map((m) => {
+    const outcome = matchOutcomeMap.get(m.id) ?? { wins: 0, losses: 0 };
+    const winTotal = winTotalMap.get(m.id) ?? 0;
+    const loseTotal = loseTotalMap.get(m.id) ?? 0;
+    const winReasonsMap = winShareByMatchReason.get(m.id) ?? new Map();
+    const loseReasonsMap = loseShareByMatchReason.get(m.id) ?? new Map();
+    const errorCount = errorCountMap.get(m.id) ?? 0;
+    return {
       id: m.id,
       title: m.title,
       matchDate: m.matchDate,
       opponentName: m.opponentName ?? "未填写",
-      serve: Number(m.serve ?? 0),
-      tactic: Number(m.tactic ?? 0),
-    })),
+      wins: outcome.wins,
+      losses: outcome.losses,
+      total: outcome.wins + outcome.losses,
+      winTotal,
+      loseTotal,
+      winReasons: Object.fromEntries(
+        Array.from(winReasonsMap.entries()).map(([key, val]) => [key, val])
+      ),
+      loseReasons: Object.fromEntries(
+        Array.from(loseReasonsMap.entries()).map(([key, val]) => [key, val])
+      ),
+      serveSum: Number(m.serveSum ?? 0),
+      serveCount: Number(m.serveCount ?? 0),
+      tacticSum: Number(m.tacticSum ?? 0),
+      tacticCount: Number(m.tacticCount ?? 0),
+      errorCount,
+    };
+  });
+
+  const aggregateFromMatches = (selected: typeof matches) => {
+    const rallyCount = selected.reduce(
+      (acc, m) => acc + (m.wins + m.losses),
+      0
+    );
+    const winsSum = selected.reduce((acc, m) => acc + m.wins, 0);
+    const lossesSum = selected.reduce((acc, m) => acc + m.losses, 0);
+    let matchWins = 0;
+    let matchLosses = 0;
+    for (const m of selected) {
+      if (m.wins > m.losses) matchWins += 1;
+      else if (m.losses > m.wins) matchLosses += 1;
+    }
+    const matchCount = selected.length;
+    const winRate =
+      matchCount === 0 ? 0 : Math.round((matchWins / matchCount) * 1000) / 10;
+
+    const winReasonShareSum = new Map<string, number>();
+    const loseReasonShareSum = new Map<string, number>();
+
+    for (const m of selected) {
+      if (m.winTotal > 0) {
+        for (const [reason, share] of Object.entries(m.winReasons)) {
+          const val = Number(share ?? 0);
+          winReasonShareSum.set(
+            reason,
+            (winReasonShareSum.get(reason) ?? 0) + val
+          );
+        }
+      }
+      if (m.loseTotal > 0) {
+        for (const [reason, share] of Object.entries(m.loseReasons)) {
+          const val = Number(share ?? 0);
+          loseReasonShareSum.set(
+            reason,
+            (loseReasonShareSum.get(reason) ?? 0) + val
+          );
+        }
+      }
+    }
+
+    const winReasonShares = Array.from(winReasonShareSum.entries()).map(
+      ([reason, sum]) => {
+        return {
+          reason,
+          avgShare: matchCount === 0 ? 0 : sum / matchCount,
+          matches: matchCount,
+        };
+      }
+    );
+    const loseReasonShares = Array.from(loseReasonShareSum.entries()).map(
+      ([reason, sum]) => {
+        return {
+          reason,
+          avgShare: matchCount === 0 ? 0 : sum / matchCount,
+          matches: matchCount,
+        };
+      }
+    );
+
+    const reasonColors = [
+      "#0ea5e9",
+      "#22c55e",
+      "#f59e0b",
+      "#6366f1",
+      "#ef4444",
+      "#14b8a6",
+    ];
+
+    const topWinReasons = [...winReasonShares]
+      .sort((a, b) => b.avgShare - a.avgShare)
+      .slice(0, 5);
+    const topLoseReasons = [...loseReasonShares]
+      .sort((a, b) => b.avgShare - a.avgShare)
+      .slice(0, 5);
+
+    const winReasonSeries = topWinReasons.map((r, idx) => ({
+      label: r.reason,
+      color: reasonColors[idx % reasonColors.length],
+      points: selected.map((m) => ({
+        label: labelForMatch(m),
+        value: m.winReasons[r.reason] ?? 0,
+      })),
+    }));
+
+    const loseReasonSeries = topLoseReasons.map((r, idx) => ({
+      label: r.reason,
+      color: reasonColors[idx % reasonColors.length],
+      points: selected.map((m) => ({
+        label: labelForMatch(m),
+        value: m.loseReasons[r.reason] ?? 0,
+      })),
+    }));
+
+    const serveSum = selected.reduce((acc, m) => acc + m.serveSum, 0);
+    const serveCount = selected.reduce((acc, m) => acc + m.serveCount, 0);
+    const tacticSum = selected.reduce((acc, m) => acc + m.tacticSum, 0);
+    const errorSum = selected.reduce((acc, m) => acc + m.errorCount, 0);
+
+    const abilities = {
+      serve: serveCount === 0 ? 0 : serveSum / serveCount,
+      tactic: matchCount === 0 ? 0 : tacticSum / matchCount,
+      error: matchCount === 0 ? 0 : errorSum / matchCount,
+    };
+
+    const abilityTimeSeries = selected.map((m) => ({
+      id: m.id,
+      title: m.title,
+      matchDate: m.matchDate,
+      opponentName: m.opponentName ?? "未填写",
+      serve: m.serveCount === 0 ? 0 : m.serveSum / m.serveCount,
+      tactic: m.tacticSum,
+      error: m.errorCount,
+    }));
+
+    return {
+      matchCount,
+      matchWins,
+      matchLosses,
+      rallyCount,
+      wins: winsSum,
+      losses: lossesSum,
+      winRate,
+      winReasonShares,
+      loseReasonShares,
+      winReasonSeries,
+      loseReasonSeries,
+      abilities,
+      abilityTimeSeries,
+    };
+  };
+
+  const aggregated = aggregateFromMatches(matches);
+
+  return {
+    ...aggregated,
+    matches,
   };
 }
-

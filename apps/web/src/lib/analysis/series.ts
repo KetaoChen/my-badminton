@@ -14,8 +14,12 @@ export function abilitySeriesQuery(conditions: Condition[]) {
       title: schema.matches.title,
       matchDate: schema.matches.matchDate,
       opponentName: sql<string>`coalesce(${schema.opponents.name}, ${schema.matches.opponent})`,
-      serve: sql<number>`avg(${schema.rallies.serveScore})`,
-      tactic: sql<number>`avg(${schema.rallies.tacticUsed}::int)`,
+      serveAvg: sql<number>`avg(${schema.rallies.serveScore})`,
+      serveSum: sql<number>`sum(${schema.rallies.serveScore})`,
+      serveCount: sql<number>`count(${schema.rallies.serveScore})`,
+      tacticAvg: sql<number>`avg(${schema.rallies.tacticUsed}::int)`,
+      tacticSum: sql<number>`sum(${schema.rallies.tacticUsed}::int)`,
+      tacticCount: sql<number>`count(${schema.rallies.tacticUsed}::int)`,
     })
     .from(schema.rallies)
     .innerJoin(schema.matches, eq(schema.matches.id, schema.rallies.matchId))

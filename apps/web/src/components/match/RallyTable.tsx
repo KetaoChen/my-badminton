@@ -16,7 +16,6 @@ type Props = {
 
 export function RallyTable({ matchId, rallies }: Props) {
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const runClientAction = useRunClientAction();
 
   const rallyData = rallies.map((r) => ({
     ...r,
