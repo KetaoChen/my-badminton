@@ -44,8 +44,9 @@ describe("summarizeMatch", () => {
       wins: 0,
       losses: 0,
       winRate: 0,
+      serveAvg: null,
+      tacticUsed: 0,
       reasons: {},
     });
   });
 });
-

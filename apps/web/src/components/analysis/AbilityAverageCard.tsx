@@ -2,10 +2,10 @@
 
 import { Card, Space, Progress } from "antd";
 
-import { type Analysis } from "./types";
+import { type AggregatedStats } from "./types";
 
 type Props = {
-  abilities: Analysis["abilities"];
+  abilities: AggregatedStats["abilities"];
 };
 
 export function AbilityAverageCard({ abilities }: Props) {

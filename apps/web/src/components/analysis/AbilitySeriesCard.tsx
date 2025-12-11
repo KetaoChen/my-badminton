@@ -3,10 +3,10 @@
 import { Card, Typography } from "antd";
 
 import { AbilityLineChart } from "../AbilityLineChart";
-import { type Analysis } from "./types";
+import { type AggregatedStats } from "./types";
 
 type Props = {
-  series: Analysis["abilityTimeSeries"];
+  series: AggregatedStats["abilityTimeSeries"];
 };
 
 export function AbilitySeriesCard({ series }: Props) {

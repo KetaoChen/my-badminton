@@ -21,6 +21,43 @@ export type Analysis = Awaited<
   ReturnType<typeof import("@/lib/analysis").getAnalysis>
 >;
 
+export type AbilitySeriesPoint = {
+  id: string;
+  title: string;
+  matchDate: string | null;
+  opponentName: string;
+  serve: number | null;
+  tactic: number;
+  error: number;
+};
+
+export type ReasonSeriesPoint = { label: string; value: number };
+export type ReasonSeries = {
+  label: string;
+  color: string;
+  points: ReasonSeriesPoint[];
+};
+
+export type AggregatedStats = {
+  matchCount: number;
+  matchWins: number;
+  matchLosses: number;
+  rallyCount: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  winReasonShares: ReasonShare[];
+  loseReasonShares: ReasonShare[];
+  winReasonSeries: ReasonSeries[];
+  loseReasonSeries: ReasonSeries[];
+  abilities: {
+    serve: number;
+    tactic: number;
+    error: number;
+  };
+  abilityTimeSeries: AbilitySeriesPoint[];
+};
+
 export type AnalysisMatch = {
   id: string;
   title: string;

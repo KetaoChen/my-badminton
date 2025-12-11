@@ -3,11 +3,11 @@
 import { Card, Typography } from "antd";
 
 import { ReasonShareLineChart } from "../ReasonShareLineChart";
-import { type Analysis } from "./types";
+import { type AggregatedStats } from "./types";
 
 type Props = {
   title: string;
-  series: Analysis["winReasonSeries"] | Analysis["loseReasonSeries"];
+  series: AggregatedStats["winReasonSeries"] | AggregatedStats["loseReasonSeries"];
 };
 
 export function ReasonSeriesCard({ title, series }: Props) {
