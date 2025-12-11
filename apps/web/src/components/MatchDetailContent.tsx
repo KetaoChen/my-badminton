@@ -5,6 +5,7 @@ import { Card } from "antd";
 import { MatchHeaderActions } from "./match/MatchHeaderActions";
 import { MatchSummaryCard } from "./match/MatchSummaryCard";
 import { RallyForm } from "./match/RallyForm";
+import { RallyEventChart } from "./match/RallyEventChart";
 import { RallyTable } from "./match/RallyTable";
 import { ReasonDistribution } from "./match/ReasonDistribution";
 import {
@@ -81,6 +82,10 @@ export function MatchDetailContent({
             <RallyForm matchId={match.id} defaultReason="对手失误" />
           </Card>
         </section>
+
+        <Card title="回合事件" className="shadow-sm">
+          <RallyEventChart rallies={rallies} />
+        </Card>
 
         <Card title="回合列表" className="shadow-md">
           <RallyTable matchId={match.id} rallies={rallies} />

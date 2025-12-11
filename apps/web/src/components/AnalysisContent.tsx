@@ -145,11 +145,9 @@ export function AnalysisContent({
       })),
     }));
 
-    const serveSum = selectedMatches.reduce((acc, m) => acc + m.serveSum, 0);
-    const serveCount = selectedMatches.reduce(
-      (acc, m) => acc + m.serveCount,
-      0
-    );
+    const serveMatches = selectedMatches.filter((m) => m.serveSum > 0);
+    const serveSum = serveMatches.reduce((acc, m) => acc + m.serveSum, 0);
+    const serveCount = serveMatches.reduce((acc, m) => acc + m.serveCount, 0);
     const tacticSum = selectedMatches.reduce((acc, m) => acc + m.tacticSum, 0);
     const errorSum = selectedMatches.reduce((acc, m) => acc + m.errorCount, 0);
 
@@ -164,7 +162,10 @@ export function AnalysisContent({
       title: m.title,
       matchDate: m.matchDate,
       opponentName: m.opponentName,
-      serve: m.serveCount === 0 ? 0 : m.serveSum / m.serveCount,
+      serve:
+        m.serveSum > 0 && m.serveCount > 0
+          ? m.serveSum / m.serveCount
+          : null,
       tactic: m.tacticSum,
       error: m.errorCount,
     }));

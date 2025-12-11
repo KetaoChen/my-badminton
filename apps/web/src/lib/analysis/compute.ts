@@ -304,8 +304,9 @@ export async function getAnalysis(filters: AnalysisFilters) {
       })),
     }));
 
-    const serveSum = selected.reduce((acc, m) => acc + m.serveSum, 0);
-    const serveCount = selected.reduce((acc, m) => acc + m.serveCount, 0);
+    const serveMatches = selected.filter((m) => m.serveSum > 0);
+    const serveSum = serveMatches.reduce((acc, m) => acc + m.serveSum, 0);
+    const serveCount = serveMatches.reduce((acc, m) => acc + m.serveCount, 0);
     const tacticSum = selected.reduce((acc, m) => acc + m.tacticSum, 0);
     const errorSum = selected.reduce((acc, m) => acc + m.errorCount, 0);
 
@@ -320,7 +321,8 @@ export async function getAnalysis(filters: AnalysisFilters) {
       title: m.title,
       matchDate: m.matchDate,
       opponentName: m.opponentName ?? "未填写",
-      serve: m.serveCount === 0 ? 0 : m.serveSum / m.serveCount,
+      serve:
+        m.serveSum > 0 && m.serveCount > 0 ? m.serveSum / m.serveCount : null,
       tactic: m.tacticSum,
       error: m.errorCount,
     }));

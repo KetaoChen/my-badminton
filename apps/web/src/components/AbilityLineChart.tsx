@@ -17,7 +17,7 @@ type SeriesPoint = {
   matchDate: string | null;
   title: string;
   opponentName: string;
-  serve: number;
+  serve: number | null;
   tactic: number;
   error: number;
 };
@@ -42,7 +42,9 @@ export function AbilityLineChart({ data }: { data: SeriesPoint[] }) {
 
   const toDs = (key: keyof SeriesPoint, color: string, label: string) => ({
     label,
-    data: data.map((d) => Number(d[key] || 0)),
+    data: data.map((d) => (d[key] == null ? null : Number(d[key]))) as Array<
+      number | null
+    >,
     borderColor: color,
     backgroundColor: color,
     tension: 0.25,
@@ -59,10 +61,10 @@ export function AbilityLineChart({ data }: { data: SeriesPoint[] }) {
     ],
   };
 
-  const maxVal = Math.max(
-    0,
-    ...chartData.datasets.flatMap((ds) => ds.data as number[])
-  );
+  const allValues = chartData.datasets
+    .flatMap((ds) => ds.data)
+    .filter((v): v is number => typeof v === "number" && !Number.isNaN(v));
+  const maxVal = allValues.length ? Math.max(...allValues) : 0;
   const suggestedMax = Math.max(5, Math.ceil(maxVal * 1.2));
   const stepSize = suggestedMax <= 10 ? 2 : Math.ceil(suggestedMax / 5);
 
@@ -80,7 +82,8 @@ export function AbilityLineChart({ data }: { data: SeriesPoint[] }) {
           title: (items) =>
             items.length ? labelsFull[items[0].dataIndex] : "",
           label: (ctx: TooltipItem<"line">) => {
-            const v = ctx.parsed.y as number;
+            const v = ctx.parsed.y as number | null;
+            if (v == null || Number.isNaN(v)) return undefined;
             return `${ctx.dataset.label}: ${v.toFixed(1)}`;
           },
         },

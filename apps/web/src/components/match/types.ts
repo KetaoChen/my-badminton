@@ -36,6 +36,8 @@ export type Summary = {
   wins: number;
   losses: number;
   winRate: number;
+  serveAvg: number | null;
+  tacticUsed: number;
 };
 
 export type EditableMatch = {

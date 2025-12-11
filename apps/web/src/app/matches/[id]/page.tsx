@@ -61,6 +61,8 @@ export default async function MatchDetailPage({ params }: PageProps) {
         wins: summary.wins,
         losses: summary.losses,
         winRate: summary.winRate,
+        serveAvg: summary.serveAvg,
+        tacticUsed: summary.tacticUsed,
       }}
       winReasons={winReasons}
       loseReasons={loseReasons}
