@@ -29,13 +29,11 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend,
+  Legend
 );
 
 export function AbilityLineChart({ data }: { data: SeriesPoint[] }) {
-  const labelsFull = data
-    .map((d) => `${d.matchDate ?? "无日期"} · ${d.title}`)
-    .reverse(); // show oldest to newest left->right
+  const labelsFull = data.map((d) => `${d.matchDate ?? "无日期"} · ${d.title}`);
 
   const labels = labelsFull.map((label) => {
     const [datePart] = label.split("·").map((s) => s.trim());
@@ -44,7 +42,7 @@ export function AbilityLineChart({ data }: { data: SeriesPoint[] }) {
 
   const toDs = (key: keyof SeriesPoint, color: string, label: string) => ({
     label,
-    data: [...data].reverse().map((d) => Number(d[key] || 0)),
+    data: data.map((d) => Number(d[key] || 0)),
     borderColor: color,
     backgroundColor: color,
     tension: 0.25,
@@ -113,4 +111,3 @@ export function AbilityLineChart({ data }: { data: SeriesPoint[] }) {
     </div>
   );
 }
-

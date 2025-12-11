@@ -30,18 +30,26 @@ export function HistoryList({ matches }: Props) {
     <div className="flex flex-col gap-4">
       {matches.map((match) => {
         const backgroundColor = backgroundForMatch(match);
+        const isOfficial = !!match.tournamentName;
+        const matchNumberText =
+          isOfficial && match.matchNumber != null
+            ? `第${match.matchNumber}场`
+            : "";
+        const titleText =
+          [
+            match.tournamentName,
+            matchNumberText,
+            match.title,
+            match.opponentName,
+          ]
+            .filter(Boolean)
+            .join(" · ") || match.title;
         return (
           <Card
             key={match.id}
             size="small"
             className="border-slate-200"
-            title={
-              <Typography.Text strong>
-                {[match.tournamentName, match.title, match.opponentName]
-                  .filter(Boolean)
-                  .join(" · ") || match.title}
-              </Typography.Text>
-            }
+            title={<Typography.Text strong>{titleText}</Typography.Text>}
             extra={
               <Link href={`/matches/${match.id}`} className="text-sm">
                 查看详情
@@ -54,7 +62,8 @@ export function HistoryList({ matches }: Props) {
           >
             <div className="flex items-center justify-between gap-3">
               <Typography.Text type="secondary">
-                {formatDate(match.matchDate)} · 得分情况：
+                {formatDate(match.matchDate)}
+                {matchNumberText ? ` · ${matchNumberText}` : ""} · 得分情况：
                 {match.wins ?? 0} - {match.losses ?? 0}
               </Typography.Text>
               <Tag
@@ -62,15 +71,15 @@ export function HistoryList({ matches }: Props) {
                   (match.wins ?? 0) > (match.losses ?? 0)
                     ? "green"
                     : (match.wins ?? 0) < (match.losses ?? 0)
-                      ? "red"
-                      : "default"
+                    ? "red"
+                    : "default"
                 }
               >
                 {(match.wins ?? 0) > (match.losses ?? 0)
                   ? "胜"
                   : (match.wins ?? 0) < (match.losses ?? 0)
-                    ? "负"
-                    : "平"}
+                  ? "负"
+                  : "平"}
               </Tag>
             </div>
             {match.notes ? (
@@ -92,4 +101,3 @@ function formatDate(value?: string | Date | null) {
     dateStyle: "medium",
   }).format(new Date(dateValue ?? ""));
 }
-
