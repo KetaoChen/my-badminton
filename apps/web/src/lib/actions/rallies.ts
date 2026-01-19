@@ -21,6 +21,7 @@ export async function createRally(formData: FormData): Promise<void> {
     tacticUsed: formData.get("tacticUsed"),
     serveScore: formData.get("serveScore"),
     notes: formData.get("notes"),
+    insertPosition: formData.get("insertPosition"),
   });
 
   if (!parsed.success) {
@@ -40,57 +41,152 @@ export async function createRally(formData: FormData): Promise<void> {
     throw new Error("Unauthorized");
   }
 
-  const [current] = await db
-    .select({
-      maxSequence: sql<number>`coalesce(max(${schema.rallies.sequence}), 0)`,
-    })
+  // 获取所有现有回合
+  const existingRallies = await db
+    .select()
     .from(schema.rallies)
-    .where(eq(schema.rallies.matchId, data.matchId));
+    .where(eq(schema.rallies.matchId, data.matchId))
+    .orderBy(asc(schema.rallies.sequence), asc(schema.rallies.createdAt));
 
-  const sequence = (current?.maxSequence ?? 0) + 1;
+  // 如果指定了插入位置，需要重新计算所有回合
+  if (data.insertPosition !== null && data.insertPosition !== undefined) {
+    const insertPos = Math.max(
+      1,
+      Math.min(data.insertPosition, existingRallies.length + 1)
+    );
 
-  const [scoreAgg] = await db
-    .select({
-      wins: sql<number>`sum(case when ${schema.rallies.result} = 'win' and ${schema.rallies.excludeFromScore} = false then 1 else 0 end)`,
-      losses: sql<number>`sum(case when ${schema.rallies.result} = 'lose' and ${schema.rallies.excludeFromScore} = false then 1 else 0 end)`,
-    })
-    .from(schema.rallies)
-    .where(eq(schema.rallies.matchId, data.matchId));
+    // 先插入新回合到数据库（sequence设为null，稍后重新计算）
+    const [newRally] = await db
+      .insert(schema.rallies)
+      .values({
+        matchId: data.matchId,
+        sequence: null,
+        result: data.result,
+        excludeFromScore: !!data.excludeFromScore,
+        pointFor: data.result === "win" ? "self" : "opponent",
+        pointReason: data.pointReason || null,
+        tacticUsed: !!data.tacticUsed,
+        serveScore: data.serveScore ?? null,
+        notes: data.notes || null,
+      })
+      .returning();
 
-  const prevSelf = Number(scoreAgg?.wins ?? 0);
-  const prevOpp = Number(scoreAgg?.losses ?? 0);
+    if (!newRally) {
+      throw new Error("Failed to create rally");
+    }
 
-  const startScoreSelf = prevSelf;
-  const startScoreOpponent = prevOpp;
-  const endScoreSelf =
-    data.excludeFromScore || !data.result
-      ? prevSelf
-      : data.result === "win"
-      ? prevSelf + 1
-      : prevSelf;
-  const endScoreOpponent =
-    data.excludeFromScore || !data.result
-      ? prevOpp
-      : data.result === "lose"
-      ? prevOpp + 1
-      : prevOpp;
-  await db.insert(schema.rallies).values({
-    matchId: data.matchId,
-    sequence,
-    result: data.result,
-    excludeFromScore: !!data.excludeFromScore,
-    pointFor: data.result === "win" ? "self" : "opponent",
-    pointReason: data.pointReason || null,
-    tacticUsed: !!data.tacticUsed,
-    startScoreSelf,
-    startScoreOpponent,
-    endScoreSelf,
-    endScoreOpponent,
-    serveScore: data.serveScore ?? null,
-    notes: data.notes || null,
-  });
+    // 将新回合插入到指定位置
+    const updatedRallies = [
+      ...existingRallies.slice(0, insertPos - 1),
+      {
+        ...newRally,
+        result: newRally.result as "win" | "lose",
+        pointFor: newRally.pointFor as "self" | "opponent",
+      },
+      ...existingRallies.slice(insertPos - 1),
+    ];
+
+    // 重新计算所有回合的sequence和分数
+    let currentSelf = 0;
+    let currentOpp = 0;
+
+    for (let i = 0; i < updatedRallies.length; i++) {
+      const r = updatedRallies[i];
+      const result = r.result;
+
+      const startScoreSelf = currentSelf;
+      const startScoreOpponent = currentOpp;
+      const endScoreSelf =
+        r.excludeFromScore || !result
+          ? currentSelf
+          : result === "win"
+          ? currentSelf + 1
+          : currentSelf;
+      const endScoreOpponent =
+        r.excludeFromScore || !result
+          ? currentOpp
+          : result === "lose"
+          ? currentOpp + 1
+          : currentOpp;
+
+      if (!r.excludeFromScore) {
+        currentSelf = endScoreSelf;
+        currentOpp = endScoreOpponent;
+      }
+
+      await db
+        .update(schema.rallies)
+        .set({
+          sequence: i + 1,
+          result,
+          excludeFromScore: !!r.excludeFromScore,
+          pointFor: result === "win" ? "self" : "opponent",
+          pointReason: r.pointReason || null,
+          tacticUsed: !!r.tacticUsed,
+          startScoreSelf,
+          startScoreOpponent,
+          endScoreSelf,
+          endScoreOpponent,
+          serveScore: r.serveScore ?? null,
+          notes: r.notes || null,
+        })
+        .where(eq(schema.rallies.id, r.id));
+    }
+  } else {
+    // 原有逻辑：追加到末尾
+    const [current] = await db
+      .select({
+        maxSequence: sql<number>`coalesce(max(${schema.rallies.sequence}), 0)`,
+      })
+      .from(schema.rallies)
+      .where(eq(schema.rallies.matchId, data.matchId));
+
+    const sequence = (current?.maxSequence ?? 0) + 1;
+
+    const [scoreAgg] = await db
+      .select({
+        wins: sql<number>`sum(case when ${schema.rallies.result} = 'win' and ${schema.rallies.excludeFromScore} = false then 1 else 0 end)`,
+        losses: sql<number>`sum(case when ${schema.rallies.result} = 'lose' and ${schema.rallies.excludeFromScore} = false then 1 else 0 end)`,
+      })
+      .from(schema.rallies)
+      .where(eq(schema.rallies.matchId, data.matchId));
+
+    const prevSelf = Number(scoreAgg?.wins ?? 0);
+    const prevOpp = Number(scoreAgg?.losses ?? 0);
+
+    const startScoreSelf = prevSelf;
+    const startScoreOpponent = prevOpp;
+    const endScoreSelf =
+      data.excludeFromScore || !data.result
+        ? prevSelf
+        : data.result === "win"
+        ? prevSelf + 1
+        : prevSelf;
+    const endScoreOpponent =
+      data.excludeFromScore || !data.result
+        ? prevOpp
+        : data.result === "lose"
+        ? prevOpp + 1
+        : prevOpp;
+    await db.insert(schema.rallies).values({
+      matchId: data.matchId,
+      sequence,
+      result: data.result,
+      excludeFromScore: !!data.excludeFromScore,
+      pointFor: data.result === "win" ? "self" : "opponent",
+      pointReason: data.pointReason || null,
+      tacticUsed: !!data.tacticUsed,
+      startScoreSelf,
+      startScoreOpponent,
+      endScoreSelf,
+      endScoreOpponent,
+      serveScore: data.serveScore ?? null,
+      notes: data.notes || null,
+    });
+  }
 
   revalidatePath(`/matches/${data.matchId}`);
+  revalidatePath("/");
 }
 
 export async function updateRally(formData: FormData): Promise<void> {

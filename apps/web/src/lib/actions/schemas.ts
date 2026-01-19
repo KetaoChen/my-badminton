@@ -69,6 +69,15 @@ export const rallyFormSchema = z.object({
     .optional()
     .transform((v) => (v ? Number(v) : null)),
   notes: z.string().trim().optional(),
+  insertPosition: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => {
+      if (!v || v === "" || v === "end") return null;
+      const num = Number(v);
+      return Number.isNaN(num) ? null : num;
+    }),
 });
 
 export const rallyDeleteSchema = z.object({

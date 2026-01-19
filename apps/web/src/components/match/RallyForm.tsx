@@ -8,19 +8,31 @@ import { createRally } from "@/lib/actions";
 import { useRunClientAction } from "@/lib/clientActions";
 import { ResultReasonFields } from "../ResultReasonFields";
 
+import { type Rally } from "./types";
+
 type Props = {
   matchId: string;
+  rallies: Rally[];
   defaultReason?: string;
 };
 
-export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
+export function RallyForm({
+  matchId,
+  rallies,
+  defaultReason = "对手失误",
+}: Props) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [form] = Form.useForm();
   const [resetKey, setResetKey] = useState(0);
   const [resultValue, setResultValue] = useState<"win" | "lose">("win");
   const [reasonValue, setReasonValue] = useState<string>(defaultReason);
+  const [insertMode, setInsertMode] = useState<"end" | "position">("end");
   const runClientAction = useRunClientAction();
+
+  const maxSequence = rallies.length > 0 
+    ? Math.max(...rallies.map(r => r.sequence ?? 0))
+    : 0;
 
   return (
     <Form
@@ -34,6 +46,7 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
         excludeFromScore: false,
         tacticUsed: false,
         notes: "",
+        insertPosition: "",
       }}
       onSubmitCapture={(event) => {
         event.preventDefault();
@@ -52,6 +65,11 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
             : ""
         );
         formData.set("notes", values.notes ?? "");
+        if (insertMode === "position" && values.insertPosition) {
+          formData.set("insertPosition", String(values.insertPosition));
+        } else {
+          formData.set("insertPosition", "");
+        }
         setError(null);
         startTransition(async () => {
           const ok = await runClientAction(() => createRally(formData), {
@@ -64,10 +82,12 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
             "excludeFromScore",
             "tacticUsed",
             "notes",
+            "insertPosition",
           ]);
           setResetKey((key) => key + 1);
           setResultValue("win");
           setReasonValue(defaultReason);
+          setInsertMode("end");
         });
       }}
     >
@@ -94,6 +114,56 @@ export function RallyForm({ matchId, defaultReason = "对手失误" }: Props) {
             controls={false}
             disabled={pending}
           />
+        </div>
+      </Form.Item>
+
+      <div className="h-px w-full bg-slate-200" />
+
+      <Form.Item label="插入位置" className="!mb-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="insertMode"
+                checked={insertMode === "end"}
+                onChange={() => setInsertMode("end")}
+                disabled={pending}
+                className="cursor-pointer"
+              />
+              <span className="text-sm text-slate-700">末尾（默认）</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="insertMode"
+                checked={insertMode === "position"}
+                onChange={() => setInsertMode("position")}
+                disabled={pending}
+                className="cursor-pointer"
+              />
+              <span className="text-sm text-slate-700">指定位置</span>
+            </label>
+          </div>
+          {insertMode === "position" && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600">插入到第</span>
+              <Form.Item name="insertPosition" className="!mb-0" noStyle>
+                <InputNumber
+                  min={1}
+                  max={maxSequence + 1}
+                  className="w-20"
+                  placeholder="1"
+                  controls={false}
+                  disabled={pending}
+                />
+              </Form.Item>
+              <span className="text-sm text-slate-600">
+                个位置
+                {maxSequence > 0 && `（当前共 ${maxSequence} 个回合）`}
+              </span>
+            </div>
+          )}
         </div>
       </Form.Item>
 

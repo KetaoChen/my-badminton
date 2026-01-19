@@ -79,7 +79,11 @@ export function MatchDetailContent({
           </div>
 
           <Card title="新增回合" className="shadow-sm">
-            <RallyForm matchId={match.id} defaultReason="对手失误" />
+            <RallyForm
+              matchId={match.id}
+              rallies={rallies}
+              defaultReason="对手失误"
+            />
           </Card>
         </section>
 
