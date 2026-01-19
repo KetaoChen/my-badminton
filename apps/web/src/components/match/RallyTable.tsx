@@ -7,6 +7,7 @@ import { Button, Empty, Popconfirm, Space, Table, Tag } from "antd";
 import { deleteRally } from "@/lib/actions";
 import { useRunClientAction } from "@/lib/clientActions";
 import { RallyEditModal } from "../RallyEditModal";
+import { RallyInsertModal } from "../RallyInsertModal";
 import { type Rally } from "./types";
 
 type Props = {
@@ -30,7 +31,8 @@ export function RallyTable({ matchId, rallies }: Props) {
       key: "sequence",
       align: "center" as const,
       render: (val: number | null) => val ?? "—",
-      width: 2,
+      width: 60,
+      fixed: "left" as const,
     },
     {
       title: "结果",
@@ -42,7 +44,7 @@ export function RallyTable({ matchId, rallies }: Props) {
           {val === "win" ? "得分" : "失分"}
         </Tag>
       ),
-      width: 2,
+      width: 80,
     },
     {
       title: "得失分原因",
@@ -50,14 +52,14 @@ export function RallyTable({ matchId, rallies }: Props) {
       key: "pointReason",
       align: "center" as const,
       render: (val: string | null) => val || "未填写",
-      width: 3,
+      width: 120,
     },
     {
       title: "使用战术",
       dataIndex: "tacticUsed",
       key: "tacticUsed",
       align: "center" as const,
-      width: 3,
+      width: 100,
       render: (val: boolean | null) =>
         val ? "是" : val === false ? "否" : "—",
     },
@@ -66,71 +68,98 @@ export function RallyTable({ matchId, rallies }: Props) {
       dataIndex: "serveScore",
       key: "serveScore",
       align: "center" as const,
-      width: 3,
+      width: 100,
       render: (val: number | null) => (val ?? "—").toString(),
     },
     {
       title: "比分",
       key: "score",
       align: "center" as const,
+      width: 100,
       render: (_: unknown, rally: Rally) =>
         rally.endScoreSelf != null && rally.endScoreOpponent != null
           ? `${rally.endScoreSelf}:${rally.endScoreOpponent}`
           : rally.startScoreSelf != null && rally.startScoreOpponent != null
           ? `${rally.startScoreSelf}:${rally.startScoreOpponent}`
           : "未记录",
-      width: 2,
     },
     {
       title: "备注",
       dataIndex: "notes",
       key: "notes",
-      align: "center" as const,
-      width: 12,
+      align: "left" as const,
+      width: 200,
+      ellipsis: true,
       render: (val: string | null) => <div>{val || "—"}</div>,
     },
     {
       title: "操作",
       key: "actions",
       align: "center" as const,
-      width: 3,
-      render: (_: unknown, rally: Rally) => (
-        <Space size={8}>
-          <RallyEditModal
-            rally={{
-              id: rally.id,
-              matchId,
-              result: rally.result,
-              pointReason: rally.pointReason,
-              tacticUsed: rally.tacticUsed,
-              serveScore: rally.serveScore,
-              notes: rally.notes,
-              excludeFromScore: rally.excludeFromScore,
-            }}
-          />
-          <DeleteRallyButton
-            matchId={matchId}
-            rallyId={rally.id}
-            loading={pendingId === rally.id}
-            onStart={() => setPendingId(rally.id)}
-            onDone={() => setPendingId(null)}
-          />
-        </Space>
-      ),
+      width: 200,
+      fixed: "right" as const,
+      render: (_: unknown, rally: Rally, index: number) => {
+        // 在此行之前插入，所以插入位置是当前sequence
+        const insertPosition = rally.sequence ?? index + 1;
+        return (
+          <Space size={4} wrap>
+            <RallyInsertModal
+              matchId={matchId}
+              insertPosition={insertPosition}
+              rallies={rallies}
+            />
+            <RallyEditModal
+              rally={{
+                id: rally.id,
+                matchId,
+                result: rally.result,
+                pointReason: rally.pointReason,
+                tacticUsed: rally.tacticUsed,
+                serveScore: rally.serveScore,
+                notes: rally.notes,
+                excludeFromScore: rally.excludeFromScore,
+              }}
+            />
+            <DeleteRallyButton
+              matchId={matchId}
+              rallyId={rally.id}
+              loading={pendingId === rally.id}
+              onStart={() => setPendingId(rally.id)}
+              onDone={() => setPendingId(null)}
+            />
+          </Space>
+        );
+      },
     },
   ];
 
+  const maxSequence = rallies.length > 0
+    ? Math.max(...rallies.map((r) => r.sequence ?? 0))
+    : 0;
+  const insertAtEndPosition = maxSequence + 1;
+
   return (
-    <Table
-      dataSource={rallyData}
-      columns={columns}
-      rowKey="id"
-      pagination={false}
-      scroll={{ x: 1000 }}
-      tableLayout="fixed"
-      size="middle"
-      locale={{ emptyText: <Empty description="暂无回合记录" /> }}
-    />
+    <div className="flex flex-col gap-2">
+      <Table
+        dataSource={rallyData}
+        columns={columns}
+        rowKey="id"
+        pagination={false}
+        scroll={{ x: 960 }}
+        tableLayout="fixed"
+        size="middle"
+        locale={{ emptyText: <Empty description="暂无回合记录" /> }}
+      />
+      {rallies.length > 0 && (
+        <div className="flex justify-end">
+          <RallyInsertModal
+            matchId={matchId}
+            insertPosition={insertAtEndPosition}
+            rallies={rallies}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
